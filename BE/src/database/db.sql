@@ -145,3 +145,8 @@ CREATE TABLE Pedidos (
     FOREIGN KEY (EjecutivoVentasID) REFERENCES Usuarios(UsuarioID)
 );
 GO
+
+--CREAR AL ADMINISTRADOR POR DEFECTO
+INSERT INTO Usuarios (Username, PasswordHash, RolID) VALUES ('admin-pruebas', '$2b$10$zIgXOX/fCSTzNu1sT22n.uS5mC5QqU2pdFxKpVVS90yNLVoJ2YJhC', 1);--contraseña es contraAdmin
+GO
+SELECT * FROM Usuarios;
