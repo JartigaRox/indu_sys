@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv'; // Importante para leer el .env
 import authRoutes from './routes/auth.js';
+import productsRoutes from './routes/products.js';
 
 // Inicializar configuración
 dotenv.config();
@@ -16,6 +17,7 @@ app.use(cors());
 
 // Usar Rutas
 app.use("/api/auth", authRoutes);
+app.use("/api/products", productsRoutes)
 
 // Health check y Prueba de Base de Datos
 import { getConnection, sql } from '../db.js';
