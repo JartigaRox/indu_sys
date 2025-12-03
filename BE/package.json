@@ -1,0 +1,14 @@
+{
+  "name": "be",
+  "version": "1.0.0",
+  "description": "info_gp",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jartiga",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
