@@ -4,6 +4,10 @@ import cors from 'cors';
 import dotenv from 'dotenv'; // Importante para leer el .env
 import authRoutes from './routes/auth.js';
 import productsRoutes from './routes/products.js';
+import clientRoutes from './routes/clients.js';
+import locationRoutes from './routes/locations.js';
+import quotationRoutes from './routes/quotations.js';
+import ordersRoutes from './routes/orders.js';
 
 // Inicializar configuración
 dotenv.config();
@@ -17,7 +21,11 @@ app.use(cors());
 
 // Usar Rutas
 app.use("/api/auth", authRoutes);
-app.use("/api/products", productsRoutes)
+app.use("/api/products", productsRoutes);
+app.use("/api/clients", clientRoutes);
+app.use("/api/locations", locationRoutes);
+app.use("/api/quotations", quotationRoutes);
+app.use("/api/orders", ordersRoutes);
 
 // Health check y Prueba de Base de Datos
 import { getConnection, sql } from '../db.js';

@@ -1,7 +1,7 @@
 // BE/src/routes/products.js
 import { Router } from 'express';
-import { createProduct, getProducts, getProductImage } from '../controllers/products.controller.js';
-import { verifyToken } from '../middlewares/auth.middleware.js';
+import { createProduct, getProducts, getProductImage } from '../controllers/products.js';
+import { verifyToken } from '../middlewares/auth.js';
 import multer from 'multer';
 
 const router = Router();

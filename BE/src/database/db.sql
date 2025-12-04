@@ -591,3 +591,7 @@ INSERT INTO Distritos(Nombre, MunicipioID) VALUES
 ('Jutiapa',44),
 ('Tejutepeque',44),
 ('Cinquera',44);
+
+ALTER TABLE Cotizaciones ADD Estado NVARCHAR(20) DEFAULT 'Pendiente';
+
+SELECT * FROM Productos;
