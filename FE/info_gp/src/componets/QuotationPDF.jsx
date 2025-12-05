@@ -29,7 +29,7 @@ const QuotationPDF = ({ data }) => {
          </h2>
          <div className="text-secondary small mt-2" style={{ lineHeight: '1.5' }}>
            <div>{empresa.Direccion}</div>
-           <div>NCR: {empresa.NCR} | Tel: {empresa.Telefono}</div>
+           <div>NRC: {empresa.NRC} | Tel: {empresa.Telefono}</div>
            <div>{empresa.CorreoElectronico}</div>
          </div>
       </div>

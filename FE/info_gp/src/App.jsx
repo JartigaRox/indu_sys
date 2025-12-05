@@ -10,6 +10,7 @@ import Clients from './pages/Clients';
 import CreateClient from './pages/CreateClient';
 import Quotations from './pages/Quotations';
 import EditClient from './pages/EditClient';
+import Orders from './pages/Orders';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -36,6 +37,7 @@ function App() {
             <Route path="/clientes" element={<Clients />} />
             <Route path="/clientes/nuevo" element={<CreateClient />} />
             <Route path="/clientes/editar/:id" element={<EditClient />} />
+            <Route path="/ordenes" element={<Orders />} />
           </Route>
 
         </Routes>

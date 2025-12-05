@@ -1,61 +1,85 @@
-// BE/src/controllers/orders.controller.js
 import { getConnection, sql } from '../../db.js';
 
-export const createOrder = async (req, res) => {
-    const { 
-        clienteId, 
-        fechaEntrega, 
-        ejecutivoVentasId 
-    } = req.body;
-
-    // "ElaboradoPor" es el usuario que está usando el sistema ahora mismo
-    const elaboradoPorId = req.user.id; 
-
-    if (!clienteId || !fechaEntrega) {
-        return res.status(400).json({ message: "Cliente y Fecha de Entrega son obligatorios" });
-    }
-
+// 1. Obtener listado de Órdenes (Solo Cotizaciones Aceptadas)
+export const getOrders = async (req, res) => {
     try {
         const pool = await getConnection();
-
-        await pool.request()
-            .input("clienteId", sql.Int, clienteId)
-            .input("fechaEntrega", sql.DateTime, fechaEntrega) // Formato YYYY-MM-DD
-            .input("elaboradoPorId", sql.Int, elaboradoPorId)
-            .input("ejecutivoVentasId", sql.Int, ejecutivoVentasId || null) // Puede ser opcional
-            .query(`
-                INSERT INTO Pedidos (ClienteID, FechaEntrega, ElaboradoPorID, EjecutivoVentasID)
-                VALUES (@clienteId, @fechaEntrega, @elaboradoPorId, @ejecutivoVentasId)
-            `);
-
-        res.status(201).json({ message: "Pedido de inicio generado correctamente" });
-
+        const result = await pool.request().query(`
+            SELECT 
+                c.CotizacionID, c.NumeroCotizacion, c.FechaRealizacion, 
+                c.Estado,
+                cli.NombreCliente,
+                e.Nombre as NombreEmpresa
+            FROM Cotizaciones c
+            INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
+            LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID
+            WHERE c.Estado = 'Aceptada'
+            ORDER BY c.FechaRealizacion DESC
+        `);
+        res.json(result.recordset);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-export const getOrders = async (req, res) => {
+// 2. OBTENER DETALLE DE LA ORDEN
+export const getOrderById = async (req, res) => {
+    const { id } = req.params;
     try {
         const pool = await getConnection();
-        // Doble JOIN a Usuarios para obtener nombres distintos
-        const result = await pool.request().query(`
-            SELECT 
-                p.PedidoID, 
-                p.FechaOrdenInicio, 
-                p.FechaEntrega,
-                c.NombreCliente,
-                u1.Username as ElaboradoPor,
-                u2.Username as EjecutivoVentas
-            FROM Pedidos p
-            INNER JOIN Clientes c ON p.ClienteID = c.ClienteID
-            INNER JOIN Usuarios u1 ON p.ElaboradoPorID = u1.UsuarioID
-            LEFT JOIN Usuarios u2 ON p.EjecutivoVentasID = u2.UsuarioID
-            ORDER BY p.FechaOrdenInicio DESC
-        `);
         
-        res.json(result.recordset);
+        // A. Encabezado + Cliente + Empresa (¡Con nombres correctos!)
+        const header = await pool.request()
+            .input("id", sql.Int, id)
+            .query(`
+                SELECT 
+                    c.CotizacionID, c.NumeroCotizacion, c.FechaRealizacion, c.EmpresaID,
+                    cli.NombreCliente, cli.DireccionCalle, cli.Telefono as TelefonoCliente,
+                    cli.AtencionA,
+                    m.Nombre as Municipio, dep.Nombre as Departamento,
+                    
+                    -- Datos de Empresa
+                    e.Nombre as EmpresaNombre, 
+                    e.Direccion as EmpresaDireccion, 
+                    e.NRC,  -- <--- IMPORTANTE: Asegúrate que en tu BD se llame 'NRC'
+                    e.Telefono as EmpresaTelefono,
+                    e.CorreoElectronico as EmpresaEmail,
+                    e.PaginaWeb as EmpresaWeb
+                FROM Cotizaciones c
+                INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
+                LEFT JOIN Distritos d ON cli.DistritoID = d.DistritoID
+                LEFT JOIN Municipios m ON d.MunicipioID = m.MunicipioID
+                LEFT JOIN Departamentos dep ON m.DepartamentoID = dep.DepartamentoID
+                LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID
+                WHERE c.CotizacionID = @id AND c.Estado = 'Aceptada'
+            `);
+
+        // B. Detalles (Productos)
+        const details = await pool.request()
+            .input("id", sql.Int, id)
+            .query(`
+                SELECT 
+                    d.Cantidad, 
+                    p.Nombre as NombreProducto, 
+                    p.CodigoProducto,
+                    p.Descripcion,
+                    p.ProductoID -- Necesario para la imagen
+                FROM DetalleCotizaciones d
+                INNER JOIN Productos p ON d.ProductoID = p.ProductoID
+                WHERE d.CotizacionID = @id
+            `);
+
+        if (header.recordset.length === 0) {
+            return res.status(404).json({ message: "Orden no encontrada o no está Aceptada" });
+        }
+
+        const data = header.recordset[0];
+        data.items = details.recordset;
+
+        res.json(data);
+
     } catch (error) {
+        console.error("Error en getOrderById:", error);
         res.status(500).json({ message: error.message });
     }
 };

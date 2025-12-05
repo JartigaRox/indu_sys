@@ -123,20 +123,32 @@ export const getQuotes = async (req, res) => {
 // ---------------------------------------------------
 // 3. OBTENER DETALLE (Para PDF y Modal)
 // ---------------------------------------------------
+// 3. OBTENER DETALLE (Actualizado con NCR, Teléfono, Web, Email de Empresa)
 export const getQuoteById = async (req, res) => {
     const { id } = req.params;
     try {
         const pool = await getConnection();
         
-        // Consulta Encabezado + Datos Cliente + Datos Empresa
+        // Consulta Encabezado + Datos Cliente + Datos Empresa COMPLETOS
         const header = await pool.request()
             .input("id", sql.Int, id)
             .query(`
                 SELECT 
-                    c.*, 
+                    c.CotizacionID, c.NumeroCotizacion, c.FechaRealizacion, c.TotalCotizacion, c.Estado,
+                    c.EmpresaID, c.ClienteID, c.NombreQuienCotiza,
+                    c.TelefonoSnapshot, c.AtencionASnapshot, c.DireccionSnapshot,
+                    
+                    -- Datos Cliente
                     cli.NombreCliente, cli.CorreoElectronico, 
                     m.Nombre as Municipio, dep.Nombre as Departamento,
-                    e.Nombre as EmpresaNombre, e.Direccion as EmpresaDireccion
+                    
+                    -- DATOS EMPRESA (Alias importantes para el Frontend)
+                    e.Nombre as EmpresaNombre, 
+                    e.Direccion as EmpresaDireccion,
+                    e.NRC,                          -- <--- NUEVO
+                    e.Telefono as TelefonoEmpresa,  -- <--- NUEVO
+                    e.CorreoElectronico as EmailEmpresa, -- <--- NUEVO
+                    e.PaginaWeb as WebEmpresa       -- <--- NUEVO
                 FROM Cotizaciones c
                 INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
                 LEFT JOIN Distritos d ON cli.DistritoID = d.DistritoID
@@ -151,7 +163,7 @@ export const getQuoteById = async (req, res) => {
             .input("id", sql.Int, id)
             .query(`
                 SELECT 
-                    d.*, 
+                    d.ProductoID, d.Cantidad, d.PrecioUnitario,
                     p.Nombre as NombreProducto, 
                     p.CodigoProducto,
                     p.Descripcion
@@ -168,7 +180,8 @@ export const getQuoteById = async (req, res) => {
         res.json(data);
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Error en getQuoteById:", error);
+        res.status(500).json({ message: "Error al obtener la cotización", error: error.message });
     }
 };
 

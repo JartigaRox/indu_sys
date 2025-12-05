@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Modal, Button, Spinner, Alert } from 'react-bootstrap';
 import { Printer, CheckCircle, XCircle, FileText } from 'lucide-react';
-import html2pdf from 'html2pdf.js'; // <--- LIBRERÍA DE IMPRESIÓN
+import html2pdf from 'html2pdf.js'; // Librería de impresión
 import api from '../api/axios';
 import QuotationPDF from './QuotationPDF';
 
@@ -10,23 +10,22 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // Referencia al contenedor
   const componentRef = useRef(null);
 
-  // FUNCIÓN IMPRESIÓN (html2pdf)
-const handlePrint = () => {
+  // --- FUNCIÓN DE IMPRESIÓN IGUALADA A CREATEQUOTATION ---
+  const handlePrint = () => {
     const element = componentRef.current;
     
     const opt = {
-      margin:       [0.5, 0.5, 0.5, 0.5], // Márgenes [Arriba, Izq, Abajo, Der] en pulgadas (aprox 1.27cm)
-      filename:     `Cotizacion-${pdfData.numeroCotizacion}.pdf`,
+      margin:       [0.5, 0.5, 0.5, 0.5], // Márgenes iguales
+      filename:     `Cotizacion-${quoteData?.numeroCotizacion || 'Doc'}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, letterRendering: true }, 
+      html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
-      // ESTA ES LA CLAVE PARA QUE NO SE DESBORDE:
-      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // Misma lógica de salto de página
     };
 
-    // Generar y Guardar
     html2pdf().set(opt).from(element).save();
   };
 
@@ -35,6 +34,7 @@ const handlePrint = () => {
       setLoading(true);
       api.get(`/quotations/${quoteId}`).then(res => {
             const data = res.data;
+            
             const formattedData = {
                 cliente: {
                     NombreCliente: data.NombreCliente,
@@ -58,7 +58,7 @@ const handlePrint = () => {
                     EmpresaID: data.EmpresaID,
                     Nombre: data.EmpresaNombre,
                     Direccion: data.EmpresaDireccion,
-                    NCR: data.NCR,
+                    NRC: data.NRC, 
                     Telefono: data.TelefonoEmpresa, 
                     CorreoElectronico: data.EmailEmpresa,
                     PaginaWeb: data.WebEmpresa
@@ -90,9 +90,10 @@ const handlePrint = () => {
         {!loading && !error && quoteData && (
             <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '70vh' }}>
                 
-                {/* LADO IZQUIERDO: VISTA PREVIA (Referencia para html2pdf) */}
+                {/* LADO IZQUIERDO: VISTA PREVIA */}
                 <div className="flex-grow-1 p-4 bg-secondary bg-opacity-25 text-center overflow-auto">
-                    <div className="d-inline-block shadow bg-white text-start" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+                    {/* AQUI AJUSTAMOS LA ESCALA A 0.75 PARA QUE SE VEA IGUAL AL FORMULARIO */}
+                    <div className="d-inline-block shadow bg-white text-start" style={{ transform: 'scale(0.75)', transformOrigin: 'top center' }}>
                         <div ref={componentRef}>
                             <QuotationPDF data={quoteData} />
                         </div>

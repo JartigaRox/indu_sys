@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Outlet } from 'react-router-dom';
-import { LogOut, Home, FileText, Users, Package, Menu, X } from 'lucide-react';
+import { LogOut, Home, FileText, Users, Package, Menu, ClipboardList } from 'lucide-react';
 import { Button, Offcanvas, Container } from 'react-bootstrap';
 
 const Layout = () => {
@@ -48,6 +48,16 @@ const Layout = () => {
                             <FileText size={20} /> Cotizaciones
                         </button>
                     </li>
+
+                    <li>
+                        <button
+                            onClick={() => { navigate('/ordenes'); setShowMobileMenu(false); }}
+                            className="btn text-white w-100 text-start d-flex align-items-center gap-2 hover-gold"
+                        >
+                            <ClipboardList size={20} /> Órdenes de Pedido
+                        </button>
+                    </li>
+
                     <div className="text-white-50 small text-uppercase mt-3 mb-1 px-3">Administración</div>
                     <li>
                         <button
