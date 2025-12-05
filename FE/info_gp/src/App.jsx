@@ -30,6 +30,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/cotizaciones" element={<Quotations />} />
             <Route path="/cotizaciones/nueva" element={<CreateQuotation />} />
+            <Route path="/cotizaciones/editar/:id" element={<CreateQuotation />} />
             <Route path="/productos/nuevo" element={<CreateProduct />} />
             <Route path="/usuarios/registro" element={<RegisterUser />} />
             <Route path="/clientes" element={<Clients />} />

@@ -205,3 +205,76 @@ export const getNextQuoteNumber = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// ... (Tus otras funciones)
+
+// 6. ACTUALIZAR COTIZACIÓN COMPLETA (PUT)
+export const updateQuote = async (req, res) => {
+    const { id } = req.params;
+    const { 
+        clienteId, 
+        empresaId, 
+        nombreQuienCotiza, 
+        telefonoSnapshot, 
+        atencionASnapshot, 
+        direccionSnapshot, 
+        items 
+    } = req.body;
+
+    const pool = await getConnection();
+    const transaction = new sql.Transaction(pool);
+
+    try {
+        await transaction.begin();
+
+        // 1. Calcular Nuevo Total
+        const totalGeneral = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
+
+        // 2. Actualizar Encabezado
+        await transaction.request()
+            .input("id", sql.Int, id)
+            .input("clienteId", sql.Int, clienteId)
+            .input("empresaId", sql.Int, empresaId)
+            .input("nombreQuien", sql.NVarChar, nombreQuienCotiza)
+            .input("tel", sql.NVarChar, telefonoSnapshot)
+            .input("atencion", sql.NVarChar, atencionASnapshot)
+            .input("dir", sql.NVarChar, direccionSnapshot)
+            .input("total", sql.Decimal(18, 2), totalGeneral)
+            .query(`
+                UPDATE Cotizaciones SET
+                    ClienteID = @clienteId,
+                    EmpresaID = @empresaId,
+                    NombreQuienCotiza = @nombreQuien,
+                    TelefonoSnapshot = @tel,
+                    AtencionASnapshot = @atencion,
+                    DireccionSnapshot = @dir,
+                    TotalCotizacion = @total
+                WHERE CotizacionID = @id
+            `);
+
+        // 3. Borrar Detalles Antiguos (Para reescribirlos)
+        await transaction.request()
+            .input("id", sql.Int, id)
+            .query("DELETE FROM DetalleCotizaciones WHERE CotizacionID = @id");
+
+        // 4. Insertar Detalles Nuevos
+        for (const item of items) {
+            await transaction.request()
+                .input("cotId", sql.Int, id)
+                .input("prodId", sql.Int, item.productoId)
+                .input("cant", sql.Int, item.cantidad)
+                .input("precio", sql.Decimal(18, 2), item.precio)
+                .query(`
+                    INSERT INTO DetalleCotizaciones (CotizacionID, ProductoID, Cantidad, PrecioUnitario)
+                    VALUES (@cotId, @prodId, @cant, @precio)
+                `);
+        }
+
+        await transaction.commit();
+        res.json({ message: "Cotización actualizada correctamente" });
+
+    } catch (error) {
+        if (transaction._aborted === false) await transaction.rollback();
+        res.status(500).json({ message: error.message });
+    }
+};

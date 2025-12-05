@@ -1,55 +1,59 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Card, Table, Button, Container, Badge, Spinner, Alert } from 'react-bootstrap';
-import { Plus, FileText, Eye, Calendar, Check, X } from 'lucide-react'; // Íconos actualizados
+import { Plus, FileText, Eye, Calendar, Edit, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import QuoteDetailModal from '../componets/QuoteDetailModal'; // <--- IMPORTAR EL MODAL
+import QuoteDetailModal from '../componets/QuoteDetailModal'; // Importamos el Modal
 
 const Quotations = () => {
   const navigate = useNavigate();
+  
+  // Estados de datos
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Estado para el Modal
+  // Estados para el Modal
   const [showModal, setShowModal] = useState(false);
   const [selectedQuoteId, setSelectedQuoteId] = useState(null);
 
-  // Función para cargar datos (la extraemos para poder reusarla al actualizar estado)
+  // Función para cargar datos (se reutiliza al actualizar estado)
   const fetchQuotes = async () => {
     setLoading(true);
     try {
       const res = await api.get('/quotations');
       setQuotes(res.data);
+      setError(null);
     } catch (err) {
       console.error(err);
-      setError("Error al cargar historial");
+      setError("Error al cargar el historial de cotizaciones.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Carga inicial
   useEffect(() => {
     fetchQuotes();
   }, []);
 
-  // Función al hacer clic en "Ver / Acciones"
+  // Abrir Modal de Decisión
   const handleOpenModal = (id) => {
     setSelectedQuoteId(id);
     setShowModal(true);
   };
 
-  // Función callback para cuando se acepta/rechaza en el modal
+  // Callback cuando se Acepta/Rechaza en el modal -> Recargar lista
   const handleStatusUpdated = () => {
-    fetchQuotes(); // Recargamos la lista para ver el nuevo estado (Verde/Rojo)
+    fetchQuotes();
   };
 
-  // Helper para color del Badge
+  // Helper para colores de estado
   const getStatusBadge = (status) => {
     switch(status) {
         case 'Aceptada': return 'success';
         case 'Rechazada': return 'danger';
-        default: return 'secondary';
+        default: return 'secondary'; // Pendiente
     }
   };
 
@@ -59,8 +63,8 @@ const Quotations = () => {
       {/* Encabezado */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="text-inst-blue fw-bold mb-0">Cotizaciones</h2>
-          <p className="text-muted small mb-0">Gestión y aprobación de propuestas</p>
+          <h2 className="text-inst-blue fw-bold mb-0">Historial de Cotizaciones</h2>
+          <p className="text-muted small mb-0">Gestiona tus propuestas comerciales</p>
         </div>
         <Button 
             className="btn-institutional d-flex align-items-center gap-2"
@@ -70,12 +74,22 @@ const Quotations = () => {
         </Button>
       </div>
 
-      {/* Tabla */}
+      {/* Tabla de Contenido */}
       <Card className="shadow-sm border-0">
         <Card.Body className="p-0">
-          {loading && <div className="text-center p-5"><Spinner animation="border" /></div>}
+          
+          {loading && <div className="text-center p-5"><Spinner animation="border" variant="primary" /></div>}
+          
           {error && <Alert variant="danger" className="m-3">{error}</Alert>}
           
+          {!loading && !error && quotes.length === 0 && (
+            <div className="text-center p-5 text-muted">
+                <FileText size={48} className="mb-3 opacity-50" />
+                <p>No se han generado cotizaciones aún.</p>
+                <Button variant="link" onClick={() => navigate('/cotizaciones/nueva')}>Crear la primera</Button>
+            </div>
+          )}
+
           {!loading && quotes.length > 0 && (
             <Table hover responsive className="mb-0 align-middle">
               <thead className="bg-light text-secondary small text-uppercase">
@@ -85,35 +99,60 @@ const Quotations = () => {
                   <th>Fecha</th>
                   <th className="text-end">Total</th>
                   <th className="text-center">Estado</th>
-                  <th className="text-center">Acciones</th>
+                  <th className="text-center pe-4">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {quotes.map(q => (
                   <tr key={q.CotizacionID}>
-                    <td className="ps-4 fw-bold text-inst-blue">{q.NumeroCotizacion}</td>
-                    <td><div className="fw-bold text-dark">{q.NombreCliente}</div></td>
+                    <td className="ps-4 fw-bold text-inst-blue">
+                        {q.NumeroCotizacion}
+                    </td>
                     <td>
-                        <div className="small text-muted d-flex align-items-center gap-1">
-                            <Calendar size={14} /> {new Date(q.FechaRealizacion).toLocaleDateString()}
+                        <div className="fw-bold text-dark">{q.NombreCliente}</div>
+                        <div className="small text-muted" style={{fontSize: '0.8rem'}}>
+                            {q.NombreEmpresa || 'Sin Empresa Asignada'}
                         </div>
                     </td>
-                    <td className="text-end fw-bold">${q.TotalCotizacion ? q.TotalCotizacion.toFixed(2) : '0.00'}</td>
+                    <td>
+                        <div className="small text-muted d-flex align-items-center gap-1">
+                            <Calendar size={14} />
+                            {new Date(q.FechaRealizacion).toLocaleDateString()}
+                        </div>
+                    </td>
+                    <td className="text-end fw-bold">
+                        ${q.TotalCotizacion ? q.TotalCotizacion.toFixed(2) : '0.00'}
+                    </td>
                     <td className="text-center">
                         <Badge bg={getStatusBadge(q.Estado)} className="px-3 fw-normal">
                             {q.Estado || 'Pendiente'}
                         </Badge>
                     </td>
-                    <td className="text-center">
-                        {/* Botón Principal de Acciones */}
-                        <Button 
-                            variant="outline-primary" 
-                            size="sm" 
-                            className="d-flex align-items-center gap-1 mx-auto"
-                            onClick={() => handleOpenModal(q.CotizacionID)}
-                        >
-                            <Eye size={16} /> Ver / Decidir
-                        </Button>
+                    <td className="text-center pe-4">
+                        <div className="d-flex justify-content-center gap-2">
+                            {/* Botón Ver / Decidir */}
+                            <Button 
+                                variant="outline-primary" 
+                                size="sm" 
+                                className="d-flex align-items-center gap-1 border-0 bg-light text-primary"
+                                onClick={() => handleOpenModal(q.CotizacionID)}
+                                title="Ver PDF y Decidir"
+                            >
+                                <Eye size={18} />
+                            </Button>
+
+                            {/* Botón Editar (Solo si está pendiente, opcionalmente) */}
+                            <Button 
+                                variant="outline-secondary" 
+                                size="sm"
+                                className="d-flex align-items-center gap-1 border-0 bg-light text-secondary"
+                                onClick={() => navigate(`/cotizaciones/editar/${q.CotizacionID}`)}
+                                title="Editar Cotización"
+                                disabled={q.Estado !== 'Pendiente'} // Opcional: Bloquear si ya fue aceptada
+                            >
+                                <Edit size={18} />
+                            </Button>
+                        </div>
                     </td>
                   </tr>
                 ))}
@@ -123,7 +162,7 @@ const Quotations = () => {
         </Card.Body>
       </Card>
 
-      {/* --- MODAL DE DETALLE Y ACCIONES --- */}
+      {/* --- MODAL DE DETALLE --- */}
       <QuoteDetailModal 
         show={showModal} 
         onHide={() => setShowModal(false)}
