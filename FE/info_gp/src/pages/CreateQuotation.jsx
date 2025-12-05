@@ -122,15 +122,19 @@ const CreateQuotation = () => {
   const pdfData = { cliente: clientData, items, user, numeroCotizacion: quoteNumber, fecha: new Date(), empresa: companyData };
 
   // --- NUEVA FUNCIÓN DE IMPRESIÓN (html2pdf) ---
-  const handlePrint = () => {
+const handlePrint = () => {
     const element = componentRef.current;
+    
     const opt = {
-      margin: 0,
-      filename: `Cotizacion-${quoteNumber}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true }, // scale 2 mejora la calidad (HD)
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      margin:       [0.5, 0.5, 0.5, 0.5], // Márgenes [Arriba, Izq, Abajo, Der] en pulgadas (aprox 1.27cm)
+      filename:     `Cotizacion-${pdfData.numeroCotizacion}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, letterRendering: true }, 
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+      // ESTA ES LA CLAVE PARA QUE NO SE DESBORDE:
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
     };
+
     // Generar y Guardar
     html2pdf().set(opt).from(element).save();
   };
