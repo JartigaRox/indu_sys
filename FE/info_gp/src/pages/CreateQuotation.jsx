@@ -72,12 +72,12 @@ const CreateQuotation = () => {
         }));
         setProductOptions(options);
 
-        if (!isEditMode) {
-            setNextId(resNext.data.nextId);
-            if (resCompanies.data.length > 0) setSelectedCompanyId(resCompanies.data[0].EmpresaID);
-            setLoading(false);
-        } else {
-            // Cargar datos de la cotización a editar
+        // SIEMPRE usar el siguiente ID disponible (para crear nueva cotización)
+        setNextId(resNext.data.nextId);
+        if (resCompanies.data.length > 0) setSelectedCompanyId(resCompanies.data[0].EmpresaID);
+
+        if (isEditMode) {
+            // Cargar datos de la cotización original como base
             const resQuote = await api.get(`/quotations/${id}`);
             const q = resQuote.data;
             
@@ -93,12 +93,11 @@ const CreateQuotation = () => {
                 precio: i.PrecioUnitario
             })));
             
-            // Extraer número correlativo
-            const numParts = q.NumeroCotizacion.split('-');
-            if (numParts.length > 1) setNextId(parseInt(numParts[numParts.length - 1]));
-            
-            setLoading(false);
+            // Nota: NO usamos el número de la cotización original, 
+            // siempre generamos uno nuevo con resNext.data.nextId
         }
+        
+        setLoading(false);
       } catch (error) { console.error(error); }
     };
     loadData();
@@ -178,21 +177,21 @@ const CreateQuotation = () => {
     };
 
     try {
-      // SIEMPRE CREAMOS UNA NUEVA (POST) aunque vengamos de editar, según requerimiento
-      // Si quisieras actualizar la misma, usarías PUT
+      // SIEMPRE CREAR UNA NUEVA COTIZACIÓN (POST)
+      // Esto mantiene el historial de todas las versiones
+      await api.post('/quotations', payload);
+      
       if (isEditMode) {
-        // Opción A: Actualizar la existente (PUT)
-        await api.put(`/quotations/${id}`, payload);
-        Swal.fire('Actualizado', 'Cotización modificada correctamente', 'success');
-        
-        // Opción B: Crear una nueva copia (POST) -> Descomenta esto y comenta el PUT si prefieres crear copia
-        /* await api.post('/quotations', payload);
-        Swal.fire('Generada', 'Se ha guardado como una NUEVA cotización', 'success');
-        */
+        Swal.fire({
+          title: 'Nueva versión creada',
+          text: 'Se ha guardado como una NUEVA cotización. La cotización original se mantiene sin cambios.',
+          icon: 'success',
+          confirmButtonText: 'Entendido'
+        });
       } else {
-        await api.post('/quotations', payload);
         Swal.fire('Éxito', 'Cotización creada correctamente', 'success');
       }
+      
       navigate('/cotizaciones');
     } catch (error) {
       console.error(error);
@@ -206,7 +205,10 @@ const CreateQuotation = () => {
     <div>
       <div className="d-flex align-items-center mb-4 no-print">
         <Button variant="link" onClick={() => navigate('/cotizaciones')} className="text-secondary p-0 me-3"><ArrowLeft size={24} /></Button>
-        <h2 className="text-inst-blue fw-bold mb-0">{isEditMode ? 'Editar Cotización' : 'Nueva Cotización'}</h2>
+        <div>
+          <h2 className="text-inst-blue fw-bold mb-0">{isEditMode ? 'Nueva versión de Cotización' : 'Nueva Cotización'}</h2>
+          {isEditMode && <small className="text-muted">Se creará una nueva cotización basada en la original</small>}
+        </div>
       </div>
 
       <Row>

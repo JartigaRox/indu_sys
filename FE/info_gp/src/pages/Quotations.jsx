@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { Card, Table, Button, Container, Badge, Spinner, Alert } from 'react-bootstrap';
-import { Plus, FileText, Eye, Calendar, Edit } from 'lucide-react';
+import { Card, Table, Button, Container, Badge, Spinner, Alert, Form, InputGroup } from 'react-bootstrap';
+import { Plus, FileText, Eye, Calendar, Edit, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import QuoteDetailModal from '../componets/QuoteDetailModal';
 
 const Quotations = () => {
   const navigate = useNavigate();
   const [quotes, setQuotes] = useState([]);
+  const [filteredQuotes, setFilteredQuotes] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -18,6 +20,7 @@ const Quotations = () => {
     try {
       const res = await api.get('/quotations');
       setQuotes(res.data);
+      setFilteredQuotes(res.data);
       setError(null);
     } catch (err) {
       console.error(err);
@@ -28,6 +31,23 @@ const Quotations = () => {
   };
 
   useEffect(() => { fetchQuotes(); }, []);
+
+  // Filtrar cotizaciones según el término de búsqueda
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredQuotes(quotes);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase();
+    const filtered = quotes.filter(q => 
+      q.NumeroCotizacion?.toLowerCase().includes(term) ||
+      q.NombreCliente?.toLowerCase().includes(term) ||
+      q.NombreEmpresa?.toLowerCase().includes(term) ||
+      q.Estado?.toLowerCase().includes(term)
+    );
+    setFilteredQuotes(filtered);
+  }, [searchTerm, quotes]);
 
   const handleOpenModal = (id) => {
     setSelectedQuoteId(id);
@@ -54,6 +74,38 @@ const Quotations = () => {
         </Button>
       </div>
 
+      {/* Buscador */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-3">
+          <InputGroup>
+            <InputGroup.Text className="bg-white border-end-0">
+              <Search size={18} className="text-muted" />
+            </InputGroup.Text>
+            <Form.Control
+              type="text"
+              placeholder="Buscar por número de cotización, cliente, empresa o estado..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border-start-0 ps-0"
+            />
+            {searchTerm && (
+              <Button 
+                variant="link" 
+                className="text-secondary text-decoration-none"
+                onClick={() => setSearchTerm('')}
+              >
+                Limpiar
+              </Button>
+            )}
+          </InputGroup>
+          {searchTerm && (
+            <small className="text-muted d-block mt-2">
+              Mostrando {filteredQuotes.length} de {quotes.length} cotizaciones
+            </small>
+          )}
+        </Card.Body>
+      </Card>
+
       <Card className="shadow-sm border-0">
         <Card.Body className="p-0">
           {loading && <div className="text-center p-5"><Spinner animation="border" /></div>}
@@ -66,7 +118,15 @@ const Quotations = () => {
             </div>
           )}
 
-          {!loading && quotes.length > 0 && (
+          {!loading && !error && quotes.length > 0 && filteredQuotes.length === 0 && (
+            <div className="text-center p-5 text-muted">
+                <Search size={48} className="mb-3 opacity-50" />
+                <p>No se encontraron cotizaciones con "{searchTerm}"</p>
+                <Button variant="link" onClick={() => setSearchTerm('')}>Limpiar búsqueda</Button>
+            </div>
+          )}
+
+          {!loading && filteredQuotes.length > 0 && (
             <Table hover responsive className="mb-0 align-middle">
               <thead className="bg-light text-secondary small text-uppercase">
                 <tr>
@@ -80,7 +140,7 @@ const Quotations = () => {
                 </tr>
               </thead>
               <tbody>
-                {quotes.map(q => (
+                {filteredQuotes.map(q => (
                   <tr key={q.CotizacionID}>
                     <td className="ps-4 fw-bold text-inst-blue">{q.NumeroCotizacion}</td>
                     <td>

@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
-import { Card, Table, Button, Container, Badge, Spinner, Alert, Modal } from 'react-bootstrap';
-import { FileText, Eye, Printer, X } from 'lucide-react';
+import { Card, Table, Button, Container, Badge, Spinner, Alert, Modal, Form, InputGroup } from 'react-bootstrap';
+import { FileText, Eye, Printer, X, Search } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import OrderPDF from '../componets/OrderPDF'; // Asegúrate de tener este componente
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Estados Modal
   const [showModal, setShowModal] = useState(false);
@@ -29,6 +31,20 @@ const Orders = () => {
     };
     fetchOrders();
   }, []);
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredOrders(orders);
+      return;
+    }
+    const term = searchTerm.toLowerCase();
+    const filtered = orders.filter(o => 
+      o.NumeroCotizacion?.toLowerCase().includes(term) ||
+      o.NombreCliente?.toLowerCase().includes(term) ||
+      o.NombreEmpresa?.toLowerCase().includes(term)
+    );
+    setFilteredOrders(filtered);
+  }, [searchTerm, orders]);
 
   const handleOpenOrder = async (id) => {
     setShowModal(true);
@@ -91,21 +107,60 @@ const Orders = () => {
     <Container className="py-4">
       <h2 className="text-inst-blue fw-bold mb-4">Órdenes de Pedido</h2>
 
+      {/* Buscador */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-3">
+          <InputGroup>
+            <InputGroup.Text className="bg-white border-end-0">
+              <Search size={18} className="text-muted" />
+            </InputGroup.Text>
+            <Form.Control
+              type="text"
+              placeholder="Buscar por referencia, cliente o empresa..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border-start-0 ps-0"
+            />
+            {searchTerm && (
+              <Button 
+                variant="link" 
+                className="text-secondary text-decoration-none"
+                onClick={() => setSearchTerm('')}
+              >
+                Limpiar
+              </Button>
+            )}
+          </InputGroup>
+          {searchTerm && (
+            <small className="text-muted d-block mt-2">
+              Mostrando {filteredOrders.length} de {orders.length} órdenes
+            </small>
+          )}
+        </Card.Body>
+      </Card>
+
       <Card className="shadow-sm border-0">
         <Card.Body className="p-0">
           {loading ? <div className="p-5 text-center"><Spinner animation="border"/></div> : (
-            <Table hover responsive className="mb-0 align-middle">
-              <thead className="bg-dark text-white small">
-                <tr>
-                  <th className="ps-4">Referencia</th>
-                  <th>Cliente</th>
-                  <th>Fecha Aprobación</th>
-                  <th>Empresa</th>
-                  <th className="text-end pe-4">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map(o => (
+            <>
+              {searchTerm && filteredOrders.length === 0 && (
+                <div className="text-center p-5 text-muted">
+                  No se encontraron órdenes que coincidan con la búsqueda
+                </div>
+              )}
+              {filteredOrders.length > 0 && (
+                <Table hover responsive className="mb-0 align-middle">
+                  <thead className="bg-dark text-white small">
+                    <tr>
+                      <th className="ps-4">Referencia</th>
+                      <th>Cliente</th>
+                      <th>Fecha Aprobación</th>
+                      <th>Empresa</th>
+                      <th className="text-end pe-4">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.map(o => (
                   <tr key={o.CotizacionID}>
                     <td className="ps-4 fw-bold">{o.NumeroCotizacion}</td>
                     <td>{o.NombreCliente}</td>
@@ -117,10 +172,12 @@ const Orders = () => {
                         </Button>
                     </td>
                   </tr>
-                ))}
-                {orders.length === 0 && <tr><td colSpan="5" className="text-center py-4">No hay órdenes pendientes.</td></tr>}
-              </tbody>
-            </Table>
+                    ))}
+                    {orders.length === 0 && <tr><td colSpan="5" className="text-center py-4">No hay órdenes pendientes.</td></tr>}
+                  </tbody>
+                </Table>
+              )}
+            </>
           )}
         </Card.Body>
       </Card>

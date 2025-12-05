@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { Card, Table, Button, Container, Spinner, Badge } from 'react-bootstrap';
-import { Plus, Package, Edit, Trash2 } from 'lucide-react';
+import { Card, Table, Button, Container, Spinner, Badge, Form, InputGroup } from 'react-bootstrap';
+import { Plus, Package, Edit, Trash2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2'; // <--- SWEET ALERT
 
@@ -9,6 +9,8 @@ const Products = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchProducts = async () => {
     try {
@@ -20,6 +22,21 @@ const Products = () => {
   };
 
   useEffect(() => { fetchProducts(); }, []);
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredProducts(products);
+      return;
+    }
+    const term = searchTerm.toLowerCase();
+    const filtered = products.filter(p => 
+      p.CodigoProducto?.toLowerCase().includes(term) ||
+      p.Nombre?.toLowerCase().includes(term) ||
+      p.Categoria?.toLowerCase().includes(term) ||
+      p.Subcategoria?.toLowerCase().includes(term)
+    );
+    setFilteredProducts(filtered);
+  }, [searchTerm, products]);
 
   const handleDelete = (id) => {
     Swal.fire({
@@ -53,21 +70,60 @@ const Products = () => {
         </Button>
       </div>
 
+      {/* Buscador */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-3">
+          <InputGroup>
+            <InputGroup.Text className="bg-white border-end-0">
+              <Search size={18} className="text-muted" />
+            </InputGroup.Text>
+            <Form.Control
+              type="text"
+              placeholder="Buscar por código, nombre, categoría o subcategoría..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border-start-0 ps-0"
+            />
+            {searchTerm && (
+              <Button 
+                variant="link" 
+                className="text-secondary text-decoration-none"
+                onClick={() => setSearchTerm('')}
+              >
+                Limpiar
+              </Button>
+            )}
+          </InputGroup>
+          {searchTerm && (
+            <small className="text-muted d-block mt-2">
+              Mostrando {filteredProducts.length} de {products.length} productos
+            </small>
+          )}
+        </Card.Body>
+      </Card>
+
       <Card className="shadow-sm border-0">
         <Card.Body className="p-0">
           {loading ? <div className="p-5 text-center"><Spinner animation="border"/></div> : (
-            <Table hover responsive className="mb-0 align-middle">
-              <thead className="bg-light text-secondary small text-uppercase">
-                <tr>
-                  <th className="ps-4">Código</th>
-                  <th>Imagen</th>
-                  <th>Nombre</th>
-                  <th>Categoría</th>
-                  <th className="text-end pe-4">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map(p => (
+            <>
+              {searchTerm && filteredProducts.length === 0 && (
+                <div className="text-center p-5 text-muted">
+                  No se encontraron productos que coincidan con la búsqueda
+                </div>
+              )}
+              {filteredProducts.length > 0 && (
+                <Table hover responsive className="mb-0 align-middle">
+                  <thead className="bg-light text-secondary small text-uppercase">
+                    <tr>
+                      <th className="ps-4">Código</th>
+                      <th>Imagen</th>
+                      <th>Nombre</th>
+                      <th>Categoría</th>
+                      <th className="text-end pe-4">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProducts.map(p => (
                   <tr key={p.ProductoID}>
                     <td className="ps-4 fw-bold text-inst-blue">{p.CodigoProducto}</td>
                     <td>
@@ -88,9 +144,11 @@ const Products = () => {
                         </Button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </>
           )}
         </Card.Body>
       </Card>

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { Card, Table, Button, Container, Badge, Spinner, Alert } from 'react-bootstrap';
-import { Plus, Users, MapPin, Phone } from 'lucide-react';
+import { Card, Table, Button, Container, Badge, Spinner, Alert, Form, InputGroup } from 'react-bootstrap';
+import { Plus, Users, MapPin, Phone, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Clients = () => {
     const navigate = useNavigate();
     const [clients, setClients] = useState([]);
+    const [filteredClients, setFilteredClients] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -15,6 +17,7 @@ const Clients = () => {
             try {
                 const res = await api.get('/clients');
                 setClients(res.data);
+                setFilteredClients(res.data);
             } catch (err) {
                 console.error(err);
                 setError("Error al cargar la lista de clientes");
@@ -24,6 +27,25 @@ const Clients = () => {
         };
         fetchClients();
     }, []);
+
+    // Filtrar clientes según el término de búsqueda
+    useEffect(() => {
+        if (!searchTerm.trim()) {
+            setFilteredClients(clients);
+            return;
+        }
+
+        const term = searchTerm.toLowerCase();
+        const filtered = clients.filter(c => 
+            c.CodigoCliente?.toLowerCase().includes(term) ||
+            c.NombreCliente?.toLowerCase().includes(term) ||
+            c.AtencionA?.toLowerCase().includes(term) ||
+            c.Telefono?.toLowerCase().includes(term) ||
+            c.Municipio?.toLowerCase().includes(term) ||
+            c.Departamento?.toLowerCase().includes(term)
+        );
+        setFilteredClients(filtered);
+    }, [searchTerm, clients]);
 
     return (
         <Container className="py-4">
@@ -42,6 +64,38 @@ const Clients = () => {
                 </Button>
             </div>
 
+            {/* Buscador */}
+            <Card className="shadow-sm border-0 mb-3">
+                <Card.Body className="py-3">
+                    <InputGroup>
+                        <InputGroup.Text className="bg-white border-end-0">
+                            <Search size={18} className="text-muted" />
+                        </InputGroup.Text>
+                        <Form.Control
+                            type="text"
+                            placeholder="Buscar por código, nombre, contacto, teléfono o ubicación..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="border-start-0 ps-0"
+                        />
+                        {searchTerm && (
+                            <Button 
+                                variant="link" 
+                                className="text-secondary text-decoration-none"
+                                onClick={() => setSearchTerm('')}
+                            >
+                                Limpiar
+                            </Button>
+                        )}
+                    </InputGroup>
+                    {searchTerm && (
+                        <small className="text-muted d-block mt-2">
+                            Mostrando {filteredClients.length} de {clients.length} clientes
+                        </small>
+                    )}
+                </Card.Body>
+            </Card>
+
             {/* Contenido */}
             <Card className="shadow-sm border-0">
                 <Card.Body className="p-0">
@@ -56,7 +110,13 @@ const Clients = () => {
                         </div>
                     )}
 
-                    {!loading && clients.length > 0 && (
+                    {!loading && !error && searchTerm && filteredClients.length === 0 && (
+                        <div className="text-center p-5 text-muted">
+                            No se encontraron clientes que coincidan con la búsqueda
+                        </div>
+                    )}
+
+                    {!loading && filteredClients.length > 0 && (
                         <Table hover responsive className="mb-0 align-middle">
                             <thead className="bg-light text-secondary small text-uppercase">
                                 <tr>
@@ -68,7 +128,7 @@ const Clients = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {clients.map(c => (
+                                {filteredClients.map(c => (
                                     <tr key={c.ClienteID}>
                                         <td className="ps-4 fw-bold text-inst-blue">{c.CodigoCliente}</td>
                                         <td>
