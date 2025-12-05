@@ -150,7 +150,7 @@ const EditClient = () => {
               <Col md={4}>
                 <Form.Group>
                   <Form.Label className="fw-bold text-secondary small">CÓDIGO</Form.Label>
-                  <Form.Control name="codigo" value={formData.codigo} onChange={handleChange} required />
+                  <Form.Control name="codigo" value={formData.codigo} onChange={handleChange} required  disabled/>
                 </Form.Group>
               </Col>
               <Col md={8}>

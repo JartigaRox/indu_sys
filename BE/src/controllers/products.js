@@ -30,67 +30,6 @@ export const getSubcategories = async (req, res) => {
 };
 
 // ---------------------------------------------------
-// 2. CREACIÓN DE PRODUCTO (Lógica Maestra)
-// ---------------------------------------------------
-
-export const createProduct = async (req, res) => {
-    // Multer pone el archivo en req.file y los textos en req.body
-    const { nombre, descripcion, subcategoriaId } = req.body;
-    const imagen = req.file ? req.file.buffer : null; // Buffer binario de la imagen
-
-    if (!nombre || !subcategoriaId) {
-        return res.status(400).json({ message: "Nombre y Subcategoría son obligatorios" });
-    }
-
-    try {
-        const pool = await getConnection();
-
-        // PASO A: Obtener las siglas de la categoría y subcategoría (Ej: 'OFI', 'ARM')
-        const codesResult = await pool.request()
-            .input("subId", sql.Int, subcategoriaId)
-            .query(`
-                SELECT s.CodigoSubcategoria, c.CodigoCategoria 
-                FROM Subcategorias s
-                INNER JOIN Categorias c ON s.CategoriaID = c.CategoriaID
-                WHERE s.SubcategoriaID = @subId
-            `);
-
-        if (codesResult.recordset.length === 0) {
-            return res.status(400).json({ message: "Subcategoría inválida" });
-        }
-
-        const { CodigoCategoria, CodigoSubcategoria } = codesResult.recordset[0];
-
-        // PASO B: Calcular el siguiente número correlativo (Global)
-        // Buscamos el ID máximo actual en la tabla Productos y le sumamos 1
-        const idResult = await pool.request().query("SELECT ISNULL(MAX(ProductoID), 0) + 1 as NextID FROM Productos");
-        const nextId = idResult.recordset[0].NextID;
-
-        // PASO C: Armar el Código Final (Ej: OFI-ARM-00001)
-        // .padStart(5, '0') se asegura de que el número tenga 5 dígitos (agrega ceros a la izquierda)
-        const codigoFinal = `${CodigoCategoria}-${CodigoSubcategoria}-${nextId.toString().padStart(5, '0')}`;
-
-        // PASO D: Insertar el producto en la Base de Datos
-        await pool.request()
-            .input("codigo", sql.NVarChar, codigoFinal)
-            .input("nombre", sql.NVarChar, nombre)
-            .input("descripcion", sql.NVarChar, descripcion)
-            .input("subId", sql.Int, subcategoriaId)
-            .input("imagen", sql.VarBinary, imagen) // Tipo VarBinary para la foto
-            .query(`
-                INSERT INTO Productos (CodigoProducto, Nombre, Descripcion, SubcategoriaID, Imagen) 
-                VALUES (@codigo, @nombre, @descripcion, @subId, @imagen)
-            `);
-
-        res.status(201).json({ message: "Producto guardado con éxito", codigo: codigoFinal });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error al crear producto", error: error.message });
-    }
-};
-
-// ---------------------------------------------------
 // 3. CONSULTAS Y UTILIDADES PÚBLICAS
 // ---------------------------------------------------
 
@@ -130,5 +69,108 @@ export const getProductImage = async (req, res) => {
         }
     } catch (error) {
         res.status(500).send(error.message);
+    }
+};
+
+export const createProduct = async (req, res) => {
+    const { nombre, descripcion, subcategoriaId } = req.body;
+    const imagen = req.file ? req.file.buffer : null;
+
+    if (!nombre || !subcategoriaId) return res.status(400).json({ message: "Datos incompletos" });
+
+    try {
+        const pool = await getConnection();
+
+        // 1. Obtener códigos de categoría
+        const codesResult = await pool.request()
+            .input("subId", sql.Int, subcategoriaId)
+            .query(`SELECT s.CodigoSubcategoria, c.CodigoCategoria FROM Subcategorias s INNER JOIN Categorias c ON s.CategoriaID = c.CategoriaID WHERE s.SubcategoriaID = @subId`);
+        
+        const { CodigoCategoria, CodigoSubcategoria } = codesResult.recordset[0];
+
+        // 2. Correlativo
+        const idResult = await pool.request().query("SELECT ISNULL(MAX(ProductoID), 0) + 1 as NextID FROM Productos");
+        const nextId = idResult.recordset[0].NextID;
+
+        // 3. CAMBIO A 4 DÍGITOS AQUÍ: .padStart(4, '0')
+        const codigoFinal = `${CodigoCategoria}-${CodigoSubcategoria}-${nextId.toString().padStart(4, '0')}`;
+
+        await pool.request()
+            .input("codigo", sql.NVarChar, codigoFinal)
+            .input("nombre", sql.NVarChar, nombre)
+            .input("descripcion", sql.NVarChar, descripcion)
+            .input("subId", sql.Int, subcategoriaId)
+            .input("imagen", sql.VarBinary, imagen)
+            .query(`INSERT INTO Productos (CodigoProducto, Nombre, Descripcion, SubcategoriaID, Imagen) VALUES (@codigo, @nombre, @descripcion, @subId, @imagen)`);
+
+        res.status(201).json({ message: "Producto creado", codigo: codigoFinal });
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// --- NUEVO: OBTENER PRODUCTO POR ID (Para editar) ---
+export const getProduct = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input("id", sql.Int, id)
+            .query(`
+                SELECT 
+                    p.*, 
+                    s.CategoriaID,
+                    s.CodigoSubcategoria,
+                    c.CodigoCategoria
+                FROM Productos p
+                LEFT JOIN Subcategorias s ON p.SubcategoriaID = s.SubcategoriaID
+                LEFT JOIN Categorias c ON s.CategoriaID = c.CategoriaID
+                WHERE p.ProductoID = @id
+            `);
+        res.json(result.recordset[0]);
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// --- NUEVO: ACTUALIZAR PRODUCTO ---
+export const updateProduct = async (req, res) => {
+    const { id } = req.params;
+    const { nombre, descripcion, subcategoriaId } = req.body;
+    const imagen = req.file ? req.file.buffer : null; // Si viene imagen nueva
+
+    try {
+        const pool = await getConnection();
+        const request = pool.request()
+            .input("id", sql.Int, id)
+            .input("nombre", sql.NVarChar, nombre)
+            .input("descripcion", sql.NVarChar, descripcion)
+            .input("subId", sql.Int, subcategoriaId);
+
+        let query = "UPDATE Productos SET Nombre = @nombre, Descripcion = @descripcion, SubcategoriaID = @subId";
+        
+        // Solo actualizamos imagen si el usuario subió una nueva
+        if (imagen) {
+            request.input("imagen", sql.VarBinary, imagen);
+            query += ", Imagen = @imagen";
+        }
+        
+        query += " WHERE ProductoID = @id";
+        await request.query(query);
+
+        res.json({ message: "Producto actualizado" });
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// --- NUEVO: ELIMINAR PRODUCTO ---
+export const deleteProduct = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const pool = await getConnection();
+        // Cuidado: Si el producto está en cotizaciones, SQL dará error por FK.
+        // Lo ideal sería un "Soft Delete" (Estado = Inactivo), pero por ahora haremos delete físico.
+        await pool.request().input("id", sql.Int, id).query("DELETE FROM Productos WHERE ProductoID = @id");
+        res.json({ message: "Producto eliminado" });
+    } catch (error) {
+        if (error.number === 547) {
+            return res.status(400).json({ message: "No se puede eliminar: El producto ya está en cotizaciones." });
+        }
+        res.status(500).json({ message: error.message });
     }
 };

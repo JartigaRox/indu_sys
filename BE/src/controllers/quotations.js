@@ -1,17 +1,18 @@
 import { getConnection, sql } from '../../db.js';
 
 // ---------------------------------------------------
-// 1. CREAR COTIZACIÓN (Transacción + Multi-Empresa)
+// 1. CREAR COTIZACIÓN (POST)
 // ---------------------------------------------------
 export const createQuote = async (req, res) => {
     const { 
         clienteId, 
-        empresaId, // <--- Nuevo: ID de la empresa (1 o 2)
+        empresaId, 
         nombreQuienCotiza, 
         telefonoSnapshot, 
         atencionASnapshot, 
         direccionSnapshot, 
-        items // Array: [{ productoId, cantidad, precio }, ...]
+        items, // Array de productos
+        fechaEntrega // <--- NUEVO: Fecha estimada
     } = req.body;
 
     if (!clienteId || !items || items.length === 0) {
@@ -22,53 +23,47 @@ export const createQuote = async (req, res) => {
     const transaction = new sql.Transaction(pool);
 
     try {
-        // Iniciamos transacción
         await transaction.begin();
 
-        // A. Generar Número Correlativo Seguro
-        // Buscamos el ID máximo actual y le sumamos 1
-        const idResult = await transaction.request()
-            .query("SELECT ISNULL(MAX(CotizacionID), 0) + 1 as NextID FROM Cotizaciones");
-        
+        // A. Generar Número Correlativo
+        const idResult = await transaction.request().query("SELECT ISNULL(MAX(CotizacionID), 0) + 1 as NextID FROM Cotizaciones");
         const nextId = idResult.recordset[0].NextID;
         
-        // Generar las iniciales del usuario (Ej: Juan Perez -> JU, si no hay nombre usa XX)
         const initials = nombreQuienCotiza ? nombreQuienCotiza.substring(0, 2).toUpperCase() : 'XX';
-        
-        // Formato final: JU-000001 (Rellena con ceros hasta 6 dígitos)
         const numeroCotizacion = `${initials}-${nextId.toString().padStart(6, '0')}`; 
 
-        // B. Calcular Total General
+        // B. Calcular Total
         const totalGeneral = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
 
-        // C. Insertar Encabezado (Incluyendo EmpresaID)
+        // C. Insertar Encabezado
         const requestHeader = new sql.Request(transaction);
         const resultHeader = await requestHeader
             .input("numero", sql.NVarChar, numeroCotizacion)
             .input("clienteId", sql.Int, clienteId)
-            .input("empresaId", sql.Int, empresaId || 1) // Si no viene, asume empresa 1
+            .input("empresaId", sql.Int, empresaId || 1)
             .input("nombreQuien", sql.NVarChar, nombreQuienCotiza)
             .input("tel", sql.NVarChar, telefonoSnapshot)
             .input("atencion", sql.NVarChar, atencionASnapshot)
             .input("dir", sql.NVarChar, direccionSnapshot)
             .input("total", sql.Decimal(18, 2), totalGeneral)
+            .input("fechaEntrega", sql.DateTime, fechaEntrega || null) // <--- Guardamos fecha entrega
             .query(`
                 INSERT INTO Cotizaciones (
                     NumeroCotizacion, ClienteID, EmpresaID, NombreQuienCotiza, 
                     TelefonoSnapshot, AtencionASnapshot, DireccionSnapshot, 
-                    TotalCotizacion, Estado
+                    TotalCotizacion, Estado, FechaEntregaEstimada
                 )
                 OUTPUT INSERTED.CotizacionID
                 VALUES (
                     @numero, @clienteId, @empresaId, @nombreQuien, 
                     @tel, @atencion, @dir, 
-                    @total, 'Pendiente'
+                    @total, 'Pendiente', @fechaEntrega
                 )
             `);
 
         const cotizacionId = resultHeader.recordset[0].CotizacionID;
 
-        // D. Insertar Detalles (Productos)
+        // D. Insertar Detalles
         for (const item of items) {
             const requestDetail = new sql.Request(transaction);
             await requestDetail
@@ -82,146 +77,19 @@ export const createQuote = async (req, res) => {
                 `);
         }
 
-        // Confirmar todo
         await transaction.commit();
-
         res.status(201).json({ message: "Cotización creada exitosamente", numero: numeroCotizacion });
 
     } catch (error) {
-        if (transaction._aborted === false) { 
-             await transaction.rollback();
-        }
+        if (transaction._aborted === false) await transaction.rollback();
         console.error(error);
         res.status(500).json({ message: "Error al crear cotización", error: error.message });
     }
 };
 
 // ---------------------------------------------------
-// 2. LISTAR COTIZACIONES
+// 2. ACTUALIZAR COTIZACIÓN (PUT) - "Editar"
 // ---------------------------------------------------
-export const getQuotes = async (req, res) => {
-    try {
-        const pool = await getConnection();
-        // Traemos también el nombre de la empresa para ver en la lista si es necesario
-        const result = await pool.request().query(`
-            SELECT 
-                c.CotizacionID, c.NumeroCotizacion, c.FechaRealizacion, 
-                c.TotalCotizacion, c.Estado,
-                cli.NombreCliente,
-                e.Nombre as NombreEmpresa
-            FROM Cotizaciones c
-            INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
-            LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID
-            ORDER BY c.FechaRealizacion DESC
-        `);
-        res.json(result.recordset);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// ---------------------------------------------------
-// 3. OBTENER DETALLE (Para PDF y Modal)
-// ---------------------------------------------------
-// 3. OBTENER DETALLE (Actualizado con NCR, Teléfono, Web, Email de Empresa)
-export const getQuoteById = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const pool = await getConnection();
-        
-        // Consulta Encabezado + Datos Cliente + Datos Empresa COMPLETOS
-        const header = await pool.request()
-            .input("id", sql.Int, id)
-            .query(`
-                SELECT 
-                    c.CotizacionID, c.NumeroCotizacion, c.FechaRealizacion, c.TotalCotizacion, c.Estado,
-                    c.EmpresaID, c.ClienteID, c.NombreQuienCotiza,
-                    c.TelefonoSnapshot, c.AtencionASnapshot, c.DireccionSnapshot,
-                    
-                    -- Datos Cliente
-                    cli.NombreCliente, cli.CorreoElectronico, 
-                    m.Nombre as Municipio, dep.Nombre as Departamento,
-                    
-                    -- DATOS EMPRESA (Alias importantes para el Frontend)
-                    e.Nombre as EmpresaNombre, 
-                    e.Direccion as EmpresaDireccion,
-                    e.NRC,                          -- <--- NUEVO
-                    e.Telefono as TelefonoEmpresa,  -- <--- NUEVO
-                    e.CorreoElectronico as EmailEmpresa, -- <--- NUEVO
-                    e.PaginaWeb as WebEmpresa       -- <--- NUEVO
-                FROM Cotizaciones c
-                INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
-                LEFT JOIN Distritos d ON cli.DistritoID = d.DistritoID
-                LEFT JOIN Municipios m ON d.MunicipioID = m.MunicipioID
-                LEFT JOIN Departamentos dep ON m.DepartamentoID = dep.DepartamentoID
-                LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID
-                WHERE c.CotizacionID = @id
-            `);
-
-        // Consulta Detalles (Productos)
-        const details = await pool.request()
-            .input("id", sql.Int, id)
-            .query(`
-                SELECT 
-                    d.ProductoID, d.Cantidad, d.PrecioUnitario,
-                    p.Nombre as NombreProducto, 
-                    p.CodigoProducto,
-                    p.Descripcion
-                FROM DetalleCotizaciones d
-                INNER JOIN Productos p ON d.ProductoID = p.ProductoID
-                WHERE d.CotizacionID = @id
-            `);
-
-        if (header.recordset.length === 0) return res.status(404).json({ message: "Cotización no encontrada" });
-
-        const data = header.recordset[0];
-        data.items = details.recordset;
-
-        res.json(data);
-
-    } catch (error) {
-        console.error("Error en getQuoteById:", error);
-        res.status(500).json({ message: "Error al obtener la cotización", error: error.message });
-    }
-};
-
-// ---------------------------------------------------
-// 4. CAMBIAR ESTADO (Aceptar/Rechazar)
-// ---------------------------------------------------
-export const updateQuoteStatus = async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body; // 'Aceptada' o 'Rechazada'
-
-    try {
-        const pool = await getConnection();
-        await pool.request()
-            .input("id", sql.Int, id)
-            .input("status", sql.NVarChar, status)
-            .query("UPDATE Cotizaciones SET Estado = @status WHERE CotizacionID = @id");
-
-        res.json({ message: `Estado actualizado a ${status}` });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// ---------------------------------------------------
-// 5. OBTENER SIGUIENTE NÚMERO (Para Vista Previa)
-// ---------------------------------------------------
-export const getNextQuoteNumber = async (req, res) => {
-    try {
-        const pool = await getConnection();
-        const result = await pool.request().query("SELECT ISNULL(MAX(CotizacionID), 0) + 1 as NextID FROM Cotizaciones");
-        const nextId = result.recordset[0].NextID;
-        res.json({ nextId });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// ... (Tus otras funciones)
-
-// 6. ACTUALIZAR COTIZACIÓN COMPLETA (PUT)
 export const updateQuote = async (req, res) => {
     const { id } = req.params;
     const { 
@@ -231,7 +99,8 @@ export const updateQuote = async (req, res) => {
         telefonoSnapshot, 
         atencionASnapshot, 
         direccionSnapshot, 
-        items 
+        items,
+        fechaEntrega
     } = req.body;
 
     const pool = await getConnection();
@@ -240,10 +109,9 @@ export const updateQuote = async (req, res) => {
     try {
         await transaction.begin();
 
-        // 1. Calcular Nuevo Total
         const totalGeneral = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
 
-        // 2. Actualizar Encabezado
+        // 1. Actualizar Encabezado
         await transaction.request()
             .input("id", sql.Int, id)
             .input("clienteId", sql.Int, clienteId)
@@ -253,6 +121,7 @@ export const updateQuote = async (req, res) => {
             .input("atencion", sql.NVarChar, atencionASnapshot)
             .input("dir", sql.NVarChar, direccionSnapshot)
             .input("total", sql.Decimal(18, 2), totalGeneral)
+            .input("fechaEntrega", sql.DateTime, fechaEntrega || null)
             .query(`
                 UPDATE Cotizaciones SET
                     ClienteID = @clienteId,
@@ -261,16 +130,17 @@ export const updateQuote = async (req, res) => {
                     TelefonoSnapshot = @tel,
                     AtencionASnapshot = @atencion,
                     DireccionSnapshot = @dir,
-                    TotalCotizacion = @total
+                    TotalCotizacion = @total,
+                    FechaEntregaEstimada = @fechaEntrega
                 WHERE CotizacionID = @id
             `);
 
-        // 3. Borrar Detalles Antiguos (Para reescribirlos)
+        // 2. Borrar productos viejos
         await transaction.request()
             .input("id", sql.Int, id)
             .query("DELETE FROM DetalleCotizaciones WHERE CotizacionID = @id");
 
-        // 4. Insertar Detalles Nuevos
+        // 3. Insertar productos nuevos
         for (const item of items) {
             await transaction.request()
                 .input("cotId", sql.Int, id)
@@ -288,6 +158,125 @@ export const updateQuote = async (req, res) => {
 
     } catch (error) {
         if (transaction._aborted === false) await transaction.rollback();
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// ---------------------------------------------------
+// 3. LISTAR TODAS (GET)
+// ---------------------------------------------------
+export const getQuotes = async (req, res) => {
+    try {
+        const pool = await getConnection();
+        const result = await pool.request().query(`
+            SELECT 
+                c.CotizacionID, c.NumeroCotizacion, c.FechaRealizacion, 
+                c.TotalCotizacion, c.Estado, c.FechaEntregaEstimada,
+                cli.NombreCliente,
+                e.Nombre as NombreEmpresa
+            FROM Cotizaciones c
+            INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
+            LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID
+            ORDER BY c.FechaRealizacion DESC
+        `);
+        res.json(result.recordset);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// ---------------------------------------------------
+// 4. OBTENER DETALLE COMPLETO (GET /:id) - Para PDF y Edición
+// ---------------------------------------------------
+export const getQuoteById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const pool = await getConnection();
+        
+        // Consulta Maestra (Encabezado + Cliente + Ubicación + Empresa)
+        const header = await pool.request()
+            .input("id", sql.Int, id)
+            .query(`
+                SELECT 
+                    c.*, 
+                    cli.NombreCliente, cli.CorreoElectronico, 
+                    m.Nombre as Municipio, dep.Nombre as Departamento,
+                    
+                    -- DATOS EMPRESA (Para el PDF)
+                    e.Nombre as EmpresaNombre, 
+                    e.Direccion as EmpresaDireccion,
+                    e.NRC,                          -- <--- Asegurado NRC
+                    e.Telefono as TelefonoEmpresa,
+                    e.CorreoElectronico as EmailEmpresa,
+                    e.PaginaWeb as WebEmpresa
+                FROM Cotizaciones c
+                INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
+                LEFT JOIN Distritos d ON cli.DistritoID = d.DistritoID
+                LEFT JOIN Municipios m ON d.MunicipioID = m.MunicipioID
+                LEFT JOIN Departamentos dep ON m.DepartamentoID = dep.DepartamentoID
+                LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID
+                WHERE c.CotizacionID = @id
+            `);
+
+        // Consulta Detalles
+        const details = await pool.request()
+            .input("id", sql.Int, id)
+            .query(`
+                SELECT 
+                    d.*, 
+                    p.Nombre as NombreProducto, 
+                    p.CodigoProducto,
+                    p.Descripcion
+                FROM DetalleCotizaciones d
+                INNER JOIN Productos p ON d.ProductoID = p.ProductoID
+                WHERE d.CotizacionID = @id
+            `);
+
+        if (header.recordset.length === 0) return res.status(404).json({ message: "Cotización no encontrada" });
+
+        const data = header.recordset[0];
+        data.items = details.recordset;
+
+        res.json(data);
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// ---------------------------------------------------
+// 5. CAMBIAR ESTADO (PATCH) - Registra Usuario
+// ---------------------------------------------------
+export const updateQuoteStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body; 
+    
+    // Obtenemos el usuario del token (req.user viene del middleware verifyToken)
+    const usuarioDecision = req.user ? req.user.username : 'Sistema';
+
+    try {
+        const pool = await getConnection();
+        await pool.request()
+            .input("id", sql.Int, id)
+            .input("status", sql.NVarChar, status)
+            .input("user", sql.NVarChar, usuarioDecision) // <--- Guardamos quién decidió
+            .query("UPDATE Cotizaciones SET Estado = @status, UsuarioDecision = @user WHERE CotizacionID = @id");
+
+        res.json({ message: `Estado actualizado a ${status}` });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// ---------------------------------------------------
+// 6. SIGUIENTE NUMERO (GET)
+// ---------------------------------------------------
+export const getNextQuoteNumber = async (req, res) => {
+    try {
+        const pool = await getConnection();
+        const result = await pool.request().query("SELECT ISNULL(MAX(CotizacionID), 0) + 1 as NextID FROM Cotizaciones");
+        res.json({ nextId: result.recordset[0].NextID });
+    } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };

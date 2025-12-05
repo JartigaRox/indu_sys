@@ -225,7 +225,7 @@ const Dashboard = () => {
                                 className="d-flex align-items-center gap-1 border-0 bg-light text-secondary"
                                 onClick={() => navigate(`/cotizaciones/editar/${q.CotizacionID}`)}
                                 title="Editar"
-                                disabled={q.Estado !== 'Pendiente'}
+                                enabled={q.Estado !== 'Pendiente'}
                             >
                                 <Edit size={18} />
                             </Button>

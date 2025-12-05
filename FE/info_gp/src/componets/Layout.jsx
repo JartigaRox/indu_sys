@@ -61,10 +61,10 @@ const Layout = () => {
                     <div className="text-white-50 small text-uppercase mt-3 mb-1 px-3">Administración</div>
                     <li>
                         <button
-                            onClick={() => { navigate('/productos/nuevo'); setShowMobileMenu(false); }}
+                            onClick={() => { navigate('/productos'); setShowMobileMenu(false); }}
                             className="btn text-white w-100 text-start d-flex align-items-center gap-2 hover-gold"
                         >
-                            <Package size={20} /> Crear Producto
+                            <Package size={20} /> Productos
                         </button>
                     </li>
 

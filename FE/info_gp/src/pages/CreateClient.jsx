@@ -155,19 +155,19 @@ const CreateClient = () => {
 
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">ATENCIÓN A (Opcional)</Form.Label>
+                  <Form.Label className="fw-bold text-secondary small">ATENCIÓN A </Form.Label>
                   <Form.Control name="atencionA" value={formData.atencionA} onChange={handleChange} placeholder="Persona de contacto" />
                 </Form.Group>
               </Col>
               <Col md={3}>
                 <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">TELÉFONO (Opcional)</Form.Label>
+                  <Form.Label className="fw-bold text-secondary small">TELÉFONO</Form.Label>
                   <Form.Control name="telefono" value={formData.telefono} onChange={handleChange} placeholder="0000-0000" />
                 </Form.Group>
               </Col>
               <Col md={3}>
                 <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">EMAIL (Opcional)</Form.Label>
+                  <Form.Label className="fw-bold text-secondary small">EMAIL</Form.Label>
                   <Form.Control type="email" name="email" value={formData.email} onChange={handleChange} placeholder="cliente@correo.com" />
                 </Form.Group>
               </Col>
@@ -177,7 +177,7 @@ const CreateClient = () => {
               {/* --- UBICACIÓN GEOGRÁFICA (Ahora Opcional) --- */}
               <Col md={12}>
                 <h6 className="text-inst-gold fw-bold mb-3 d-flex align-items-center gap-2">
-                    <MapPin size={18} /> Ubicación (Opcional)
+                    <MapPin size={18} /> Ubicación 
                 </h6>
               </Col>
 

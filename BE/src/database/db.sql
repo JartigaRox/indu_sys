@@ -696,3 +696,12 @@ DELETE FROM Productos;
 DELETE FROM DetalleCotizaciones;
 
 DBCC CHECKIDENT ('Subcategorias', RESEED, 0);
+
+-- 1. Agregar campos a Cotizaciones
+-- Fecha de entrega estimada
+ALTER TABLE Cotizaciones ADD FechaEntregaEstimada DATETIME;
+-- Usuario que aceptó o rechazó (Guardaremos el nombre para el historial)
+ALTER TABLE Cotizaciones ADD UsuarioDecision NVARCHAR(50);
+GO
+
+select * from Cotizaciones;
