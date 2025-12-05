@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Modal, Button, Spinner, Alert } from 'react-bootstrap';
 import { Printer, CheckCircle, XCircle, FileText } from 'lucide-react';
+import html2pdf from 'html2pdf.js'; // <--- LIBRERÍA DE IMPRESIÓN
 import api from '../api/axios';
 import QuotationPDF from './QuotationPDF';
 
@@ -8,6 +9,21 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
   const [quoteData, setQuoteData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  const componentRef = useRef(null);
+
+  // FUNCIÓN IMPRESIÓN (html2pdf)
+  const handlePrint = () => {
+    const element = componentRef.current;
+    const opt = {
+      margin: 0,
+      filename: `Cotizacion-${quoteData?.numeroCotizacion || 'Doc'}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
+  };
 
   useEffect(() => {
     if (show && quoteId) {
@@ -69,27 +85,19 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
         {!loading && !error && quoteData && (
             <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '70vh' }}>
                 
-                {/* LADO IZQUIERDO: PDF VISIBLE */}
+                {/* LADO IZQUIERDO: VISTA PREVIA (Referencia para html2pdf) */}
                 <div className="flex-grow-1 p-4 bg-secondary bg-opacity-25 text-center overflow-auto">
                     <div className="d-inline-block shadow bg-white text-start" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
-                        
-                        {/* 🚨 CLASE ESPECIAL PARA IMPRESIÓN */}
-                        <div className="printable-content">
+                        <div ref={componentRef}>
                             <QuotationPDF data={quoteData} />
                         </div>
-
                     </div>
                 </div>
 
-                {/* LADO DERECHO: BOTONES (no-print automático por CSS global) */}
-                <div className="bg-white p-4 border-start d-flex flex-column gap-3 no-print" style={{ minWidth: '300px' }}>
+                {/* LADO DERECHO: BOTONES */}
+                <div className="bg-white p-4 border-start d-flex flex-column gap-3 shadow-sm" style={{ minWidth: '300px' }}>
                     <h6 className="fw-bold border-bottom pb-2">Acciones</h6>
-                    
-                    {/* IMPRESIÓN NATIVA */}
-                    <Button variant="outline-secondary" onClick={() => window.print()} className="py-2">
-                        <Printer size={18} className="me-2"/> Imprimir / PDF
-                    </Button>
-
+                    <Button variant="outline-secondary" onClick={handlePrint} className="py-2"><Printer size={18} className="me-2"/> Descargar PDF</Button>
                     <hr className="my-2"/>
                     <Button variant="success" onClick={() => handleStatus('Aceptada')} className="py-3 fw-bold"><CheckCircle size={20} className="me-2"/> ACEPTAR</Button>
                     <Button variant="outline-danger" onClick={() => handleStatus('Rechazada')} className="py-2"><XCircle size={20} className="me-2"/> RECHAZAR</Button>

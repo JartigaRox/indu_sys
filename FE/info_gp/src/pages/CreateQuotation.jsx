@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
 import { Plus, Printer, Save, ArrowLeft, Trash2, Edit2, RotateCcw } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select'; 
+import html2pdf from 'html2pdf.js'; // <--- LIBRERÍA DE IMPRESIÓN
 import QuotationPDF from '../componets/QuotationPDF';
 
 const CreateQuotation = () => {
@@ -12,8 +13,11 @@ const CreateQuotation = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = !!id;
+  
+  // Referencia al contenedor que convertiremos en PDF
+  const componentRef = useRef(null);
 
-  // Estados...
+  // Estados
   const [clients, setClients] = useState([]);
   const [productOptions, setProductOptions] = useState([]); 
   const [companies, setCompanies] = useState([]);
@@ -29,7 +33,7 @@ const CreateQuotation = () => {
   const [editingIndex, setEditingIndex] = useState(-1);
   const [loading, setLoading] = useState(true);
 
-  // Carga de datos...
+  // Carga de datos
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -75,7 +79,7 @@ const CreateQuotation = () => {
     loadData();
   }, [isEditMode, id]);
 
-  // Manejo Items...
+  // Manejo de Items
   const handleAddItem = () => {
     if (!currentProduct || quantity <= 0 || price < 0) return;
     const newItem = {
@@ -108,7 +112,7 @@ const CreateQuotation = () => {
     if (editingIndex === index) { setEditingIndex(-1); setQuantity(1); setPrice(0); setCurrentProduct(null); }
   };
 
-  // Datos PDF
+  // Preparar datos PDF
   const clientData = clients.find(c => c.ClienteID === parseInt(selectedClient));
   const companyData = companies.find(c => c.EmpresaID === parseInt(selectedCompanyId));
   const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'XX';
@@ -116,6 +120,20 @@ const CreateQuotation = () => {
   const quoteNumber = `${initials}-${displayId}`;
 
   const pdfData = { cliente: clientData, items, user, numeroCotizacion: quoteNumber, fecha: new Date(), empresa: companyData };
+
+  // --- NUEVA FUNCIÓN DE IMPRESIÓN (html2pdf) ---
+  const handlePrint = () => {
+    const element = componentRef.current;
+    const opt = {
+      margin: 0,
+      filename: `Cotizacion-${quoteNumber}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true }, // scale 2 mejora la calidad (HD)
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    // Generar y Guardar
+    html2pdf().set(opt).from(element).save();
+  };
 
   const handleSave = async () => {
     if (!selectedClient || items.length === 0) { alert("Faltan datos"); return; }
@@ -135,29 +153,19 @@ const CreateQuotation = () => {
 
   if (loading) return <div className="p-5 text-center">Cargando...</div>;
 
-  // ... (imports y lógica igual que antes) ...
-
   return (
     <div>
-      {/* ENCABEZADO */}
-      <div className="d-flex align-items-center mb-4 no-print"> {/* Clase no-print para que no salga en papel */}
-        <Button variant="link" onClick={() => navigate('/cotizaciones')} className="text-secondary p-0 me-3">
-            <ArrowLeft size={24} />
-        </Button>
-        <h2 className="text-inst-blue fw-bold mb-0">
-            {isEditMode ? 'Editar Cotización' : 'Nueva Cotización'}
-        </h2>
+      <div className="d-flex align-items-center mb-4">
+        <Button variant="link" onClick={() => navigate('/cotizaciones')} className="text-secondary p-0 me-3"><ArrowLeft size={24} /></Button>
+        <h2 className="text-inst-blue fw-bold mb-0">{isEditMode ? 'Editar Cotización' : 'Nueva Cotización'}</h2>
       </div>
 
       <Row>
-        {/* COLUMNA IZQUIERDA: FORMULARIOS (Inputs) */}
-        <Col lg={5} className="no-print"> {/* Ocultamos todo esto al imprimir */}
-          
-          {/* Tarjeta de Configuración (Empresa / Cliente) */}
+        <Col lg={5}>
+          {/* Configuración */}
           <Card className="shadow-sm border-0 mb-4">
             <Card.Body>
               <h6 className="text-inst-blue fw-bold mb-3">Configuración</h6>
-              {/* ... Tus inputs de Empresa y Cliente ... */}
               <Form.Group className="mb-4">
                 <Form.Label className="small text-muted fw-bold">EMPRESA</Form.Label>
                 <div className="d-flex flex-column gap-2">
@@ -180,10 +188,9 @@ const CreateQuotation = () => {
             </Card.Body>
           </Card>
 
-          {/* Tarjeta de Agregar Items */}
+          {/* Items */}
           <Card className={`shadow-sm border-0 mb-4 ${editingIndex >= 0 ? 'border-warning border-2' : ''}`}>
             <Card.Body>
-              {/* ... Tus inputs de Producto, Cantidad, Precio ... */}
               <div className="d-flex justify-content-between mb-2">
                   <h6 className="fw-bold">{editingIndex >= 0 ? 'EDITAR ITEM' : 'AGREGAR ITEM'}</h6>
                   {editingIndex >= 0 && <Button size="sm" variant="link" onClick={() => {setEditingIndex(-1); setCurrentProduct(null);}}>Cancelar</Button>}
@@ -197,7 +204,7 @@ const CreateQuotation = () => {
             </Card.Body>
           </Card>
 
-          {/* Lista de Items Agregados */}
+          {/* Lista Items */}
           <Card className="shadow-sm border-0 mb-4">
              <Card.Body>
                 <h6 className="text-muted small fw-bold mb-3">ITEMS ({items.length})</h6>
@@ -211,27 +218,21 @@ const CreateQuotation = () => {
           </Card>
         </Col>
 
-        {/* COLUMNA DERECHA: VISTA PREVIA */}
+        {/* Vista Previa */}
         <Col lg={7}>
           <Card className="shadow border-0 h-100">
-            {/* Header con Botones (Oculto al imprimir) */}
-            <Card.Header className="bg-white py-3 d-flex justify-content-between align-items-center no-print">
+            <Card.Header className="bg-white py-3 d-flex justify-content-between align-items-center">
               <h6 className="mb-0 fw-bold text-secondary">Vista Previa</h6>
               <div className="d-flex gap-2">
-                <Button variant="outline-secondary" size="sm" onClick={() => window.print()} disabled={items.length === 0}>
-                    <Printer size={16} className="me-2" /> Imprimir
-                </Button>
-                <Button className="btn-institutional" size="sm" onClick={handleSave} disabled={items.length === 0}>
-                    <Save size={16} /> Guardar
-                </Button>
+                <Button variant="outline-secondary" size="sm" onClick={handlePrint} disabled={items.length === 0}><Printer size={16} /> Descargar PDF</Button>
+                <Button className="btn-institutional" size="sm" onClick={handleSave} disabled={items.length === 0}><Save size={16} /> Guardar</Button>
               </div>
             </Card.Header>
-            
             <Card.Body className="bg-secondary bg-opacity-10 d-flex justify-content-center overflow-auto p-4">
               <div className="shadow bg-white" style={{ width: '210mm', minHeight: '297mm', transform: 'scale(0.75)', transformOrigin: 'top center' }}>
                 
-                {/* DIV ESPECIAL: Este es el único que se verá al imprimir */}
-                <div className="printable-content">
+                {/* DIV CON LA REFERENCIA (Lo que html2pdf fotografiará) */}
+                <div ref={componentRef}>
                     <QuotationPDF data={pdfData} />
                 </div>
 
