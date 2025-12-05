@@ -8,6 +8,7 @@ import clientRoutes from './routes/clients.js';
 import locationRoutes from './routes/locations.js';
 import quotationRoutes from './routes/quotations.js';
 import ordersRoutes from './routes/orders.js';
+import companiesRoutes from './routes/companies.js';
 
 // Inicializar configuración
 dotenv.config();
@@ -26,6 +27,7 @@ app.use("/api/clients", clientRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/quotations", quotationRoutes);
 app.use("/api/orders", ordersRoutes);
+app.use("/api/companies", companiesRoutes);
 
 // Health check y Prueba de Base de Datos
 import { getConnection, sql } from '../db.js';

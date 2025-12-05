@@ -610,12 +610,14 @@ CREATE TABLE Empresas (
     Nombre NVARCHAR(100) NOT NULL,
     Direccion NVARCHAR(200),
     NRC NVARCHAR(50),
+    Telefono NVARCHAR(20),
+    CorreoElectronico NVARCHAR(150),
+    PaginaWeb NVARCHAR(150)
 );
 GO
-
 -- Insertamos las 2 empresas por defecto
-INSERT INTO Empresas (Nombre, Direccion, NRC) VALUES ('Empresa A S.A. de C.V.', 'San Salvador','');
-INSERT INTO Empresas (Nombre, Direccion) VALUES ('Empresa B Solutions', 'Santa Tecla','');
+INSERT INTO Empresas (Nombre, Direccion, NRC,Telefono,CorreoElectronico,PaginaWeb) VALUES ('Empresa A S.A. de C.V.', 'San Salvador','1234-5','1111-1111','empresa1@prueba.com','www.gp.com');
+INSERT INTO Empresas (Nombre, Direccion, NRC,Telefono,CorreoElectronico,PaginaWeb) VALUES ('Empresa B Solutions', 'Santa Tecla','1234-6','2222-2222','empresa2@prueba.com','www.gp.com');
 GO
 
 SELECT * FROM Empresas;

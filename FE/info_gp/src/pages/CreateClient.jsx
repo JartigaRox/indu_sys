@@ -7,15 +7,14 @@ import { useNavigate } from 'react-router-dom';
 const CreateClient = () => {
   const navigate = useNavigate();
   
-  // Estados del formulario
+  // Estados del formulario (Ya no inicializamos 'codigo')
   const [formData, setFormData] = useState({
-    codigo: '',
     nombre: '',
     atencionA: '',
     telefono: '',
     email: '',
     direccion: '',
-    distritoId: ''
+    distritoId: '' // Ahora puede ir vacío
   });
 
   // Estados para los catálogos geográficos
@@ -23,7 +22,7 @@ const CreateClient = () => {
   const [municipios, setMunicipios] = useState([]);
   const [distritos, setDistritos] = useState([]);
 
-  // Estados de selección temporal (para cargar los combos hijos)
+  // Estados de selección temporal
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedMun, setSelectedMun] = useState('');
 
@@ -43,12 +42,12 @@ const CreateClient = () => {
     loadDepts();
   }, []);
 
-  // 2. Cuando cambia Departamento -> Cargar Municipios
+  // 2. Cuando cambia Departamento
   const handleDeptChange = async (e) => {
     const deptId = e.target.value;
     setSelectedDept(deptId);
-    setSelectedMun(''); // Reset municipio
-    setFormData({ ...formData, distritoId: '' }); // Reset distrito
+    setSelectedMun(''); 
+    setFormData({ ...formData, distritoId: '' }); 
     setMunicipios([]);
     setDistritos([]);
 
@@ -62,11 +61,11 @@ const CreateClient = () => {
     }
   };
 
-  // 3. Cuando cambia Municipio -> Cargar Distritos
+  // 3. Cuando cambia Municipio
   const handleMunChange = async (e) => {
     const munId = e.target.value;
     setSelectedMun(munId);
-    setFormData({ ...formData, distritoId: '' }); // Reset distrito
+    setFormData({ ...formData, distritoId: '' }); 
     setDistritos([]);
 
     if (munId) {
@@ -79,7 +78,6 @@ const CreateClient = () => {
     }
   };
 
-  // Manejar inputs de texto normales
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -90,16 +88,25 @@ const CreateClient = () => {
     setLoading(true);
     setError(null);
 
-    if (!formData.distritoId) {
-        setError("Debes seleccionar una ubicación completa (Distrito)");
+    // VALIDACIÓN: Solo el nombre es obligatorio
+    if (!formData.nombre.trim()) {
+        setError("El nombre del cliente es obligatorio.");
         setLoading(false);
         return;
     }
 
     try {
-      await api.post('/clients', formData);
-      alert("Cliente registrado exitosamente");
-      navigate('/clientes'); // Volver a la lista
+      // Preparamos los datos. Si distritoId está vacío, enviamos null
+      const payload = {
+          ...formData,
+          distritoId: formData.distritoId || null
+      };
+
+      const res = await api.post('/clients', payload);
+      
+      // Mostramos el código que generó el backend
+      alert(`Cliente registrado exitosamente.\nCódigo Asignado: ${res.data.codigo}`);
+      navigate('/clientes'); 
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Error al guardar cliente");
@@ -129,45 +136,48 @@ const CreateClient = () => {
 
           <Form onSubmit={handleSubmit}>
             <Row className="g-3">
-              {/* --- DATOS GENERALES --- */}
-              <Col md={4}>
+              
+              {/* --- CAMPO CÓDIGO ELIMINADO --- */}
+              {/* El backend lo generará automáticamente */}
+
+              <Col md={12}>
                 <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">CÓDIGO</Form.Label>
-                  <Form.Control name="codigo" value={formData.codigo} onChange={handleChange} required placeholder="Ej. CLI-001" />
-                </Form.Group>
-              </Col>
-              <Col md={8}>
-                <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">NOMBRE O RAZÓN SOCIAL</Form.Label>
-                  <Form.Control name="nombre" value={formData.nombre} onChange={handleChange} required placeholder="Nombre del cliente" />
+                  <Form.Label className="fw-bold text-secondary small">NOMBRE O RAZÓN SOCIAL <span className="text-danger">*</span></Form.Label>
+                  <Form.Control 
+                    name="nombre" 
+                    value={formData.nombre} 
+                    onChange={handleChange} 
+                    required 
+                    placeholder="Ej. Empresa Importadora S.A." 
+                  />
                 </Form.Group>
               </Col>
 
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">ATENCIÓN A</Form.Label>
+                  <Form.Label className="fw-bold text-secondary small">ATENCIÓN A (Opcional)</Form.Label>
                   <Form.Control name="atencionA" value={formData.atencionA} onChange={handleChange} placeholder="Persona de contacto" />
                 </Form.Group>
               </Col>
               <Col md={3}>
                 <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">TELÉFONO</Form.Label>
+                  <Form.Label className="fw-bold text-secondary small">TELÉFONO (Opcional)</Form.Label>
                   <Form.Control name="telefono" value={formData.telefono} onChange={handleChange} placeholder="0000-0000" />
                 </Form.Group>
               </Col>
               <Col md={3}>
                 <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">EMAIL</Form.Label>
+                  <Form.Label className="fw-bold text-secondary small">EMAIL (Opcional)</Form.Label>
                   <Form.Control type="email" name="email" value={formData.email} onChange={handleChange} placeholder="cliente@correo.com" />
                 </Form.Group>
               </Col>
 
               <Col md={12}><hr className="my-2" /></Col>
               
-              {/* --- UBICACIÓN GEOGRÁFICA --- */}
+              {/* --- UBICACIÓN GEOGRÁFICA (Ahora Opcional) --- */}
               <Col md={12}>
                 <h6 className="text-inst-gold fw-bold mb-3 d-flex align-items-center gap-2">
-                    <MapPin size={18} /> Ubicación
+                    <MapPin size={18} /> Ubicación (Opcional)
                 </h6>
               </Col>
 
@@ -201,7 +211,7 @@ const CreateClient = () => {
                     value={formData.distritoId} 
                     onChange={handleChange}
                     disabled={!selectedMun}
-                    required
+                    // 'required' ELIMINADO
                   >
                     <option value="">-- Seleccionar --</option>
                     {distritos.map(d => (
@@ -213,14 +223,14 @@ const CreateClient = () => {
 
               <Col md={12}>
                 <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">DIRECCIÓN EXACTA</Form.Label>
+                  <Form.Label className="fw-bold text-secondary small">DIRECCIÓN EXACTA (Opcional)</Form.Label>
                   <Form.Control 
                     as="textarea" 
                     rows={2} 
                     name="direccion" 
                     value={formData.direccion} 
                     onChange={handleChange} 
-                    placeholder="Calle, Número de casa, Colonia, etc." 
+                    placeholder="Calle, Número de casa..." 
                   />
                 </Form.Group>
               </Col>

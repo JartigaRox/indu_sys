@@ -68,7 +68,7 @@ const EditClient = () => {
 
       } catch (err) {
         console.error(err);
-        setError("No se pudo cargar la información del cliente.");
+        setError("No se pudo cargar la información del cliente o hace falta agregar datos.");
       } finally {
         setLoadingData(false);
       }
