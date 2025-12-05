@@ -1,10 +1,13 @@
-/* Estilos Globales Limpios */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos Globales */
 body {
+  background-color: #f3f4f6;
   margin: 0;
   padding: 0;
-  background-color: #f3f4f6; /* Gris suave de fondo */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  overflow-x: hidden; /* Evita scroll horizontal innecesario */
 }
 
 /* Colores Institucionales */
@@ -14,7 +17,6 @@ body {
 .bg-inst-gold { background-color: #D4AF37 !important; }
 .border-inst-gold { border-color: #D4AF37 !important; }
 
-/* Botones Personalizados */
 .btn-institutional {
   background-color: #003366;
   color: white;
@@ -22,12 +24,53 @@ body {
   border: none;
   transition: all 0.3s;
 }
-
 .btn-institutional:hover {
   background-color: #D4AF37;
   color: white;
   transform: translateY(-2px);
 }
 
-/* Utilidad para el cursor */
-.cursor-pointer { cursor: pointer; }
+/* =========================================
+   ESTILOS EXCLUSIVOS DE IMPRESIÓN
+   (Esto solo se activa al darle "Imprimir")
+   ========================================= */
+@media print {
+  /* 1. Configuración de hoja */
+  @page {
+    size: auto;
+    margin: 0mm;
+  }
+
+  /* 2. Ocultar TODO lo que no sea el contenido imprimible */
+  body * {
+    visibility: hidden;
+  }
+
+  /* 3. Mostrar SOLO el contenedor del PDF */
+  .printable-content, .printable-content * {
+    visibility: visible;
+  }
+
+  /* 4. Posicionar el PDF ocupando toda la hoja */
+  .printable-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: white;
+    z-index: 9999;
+  }
+
+  /* 5. Asegurar que botones y modales NO salgan */
+  .no-print, button, .modal-header, .modal-footer, .card-header {
+    display: none !important;
+  }
+  
+  /* Forzar colores de fondo */
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

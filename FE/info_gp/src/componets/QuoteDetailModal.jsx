@@ -1,7 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Button, Spinner, Alert } from 'react-bootstrap';
 import { Printer, CheckCircle, XCircle, FileText } from 'lucide-react';
-import { useReactToPrint } from 'react-to-print';
 import api from '../api/axios';
 import QuotationPDF from './QuotationPDF';
 
@@ -9,22 +8,11 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
   const [quoteData, setQuoteData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Referencia para la impresión (Debe apuntar al componente PDF visual)
-  const componentRef = useRef();
-
-  // Hook de impresión vinculado a la referencia
-  const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
-    documentTitle: quoteData ? `Cotizacion_${quoteData.numeroCotizacion}` : 'Documento',
-    onAfterPrint: () => console.log("Impresión terminada")
-  });
 
   useEffect(() => {
     if (show && quoteId) {
       setLoading(true);
-      api.get(`/quotations/${quoteId}`)
-        .then(res => {
+      api.get(`/quotations/${quoteId}`).then(res => {
             const data = res.data;
             const formattedData = {
                 cliente: {
@@ -56,78 +44,55 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
                 }
             };
             setQuoteData(formattedData);
-            setError(null);
-        })
-        .catch(err => {
-            console.error(err);
-            setError("Error cargando el detalle");
-        })
-        .finally(() => setLoading(false));
+            setLoading(false);
+        }).catch(() => { setError("Error al cargar"); setLoading(false); });
     }
   }, [show, quoteId]);
 
   const handleStatus = async (newStatus) => {
-    if (!window.confirm(`¿Estás seguro de marcar esta cotización como ${newStatus}?`)) return;
-    try {
+    if (window.confirm(`¿Confirmar cotización como ${newStatus}?`)) {
         await api.patch(`/quotations/${quoteId}/status`, { status: newStatus });
-        onStatusChange(); 
-        onHide(); 
-    } catch (err) {
-        alert("Error al actualizar estado");
+        onStatusChange();
+        onHide();
     }
   };
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
-      <Modal.Header closeButton className="bg-inst-blue text-white">
-        <Modal.Title className="fs-5 d-flex align-items-center gap-2">
-            <FileText size={20} className="text-inst-gold" /> 
-            Visor de Decisión
-        </Modal.Title>
+      <Modal.Header closeButton>
+        <Modal.Title className="fs-5 fw-bold text-inst-blue"><FileText className="me-2"/> Detalle Cotización</Modal.Title>
       </Modal.Header>
-      
       <Modal.Body className="bg-light p-0">
-        {loading && <div className="text-center p-5"><Spinner animation="border" variant="primary" /></div>}
-        {error && <div className="p-4"><Alert variant="danger">{error}</Alert></div>}
+        {loading && <div className="p-5 text-center"><Spinner animation="border"/></div>}
+        {error && <Alert variant="danger" className="m-3">{error}</Alert>}
 
         {!loading && !error && quoteData && (
             <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '70vh' }}>
                 
-                {/* IZQUIERDA: PDF VISIBLE (Aquí está la referencia ref={componentRef}) */}
+                {/* LADO IZQUIERDO: PDF VISIBLE */}
                 <div className="flex-grow-1 p-4 bg-secondary bg-opacity-25 text-center overflow-auto">
                     <div className="d-inline-block shadow bg-white text-start" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
-                        <QuotationPDF ref={componentRef} data={quoteData} />
+                        
+                        {/* 🚨 CLASE ESPECIAL PARA IMPRESIÓN */}
+                        <div className="printable-content">
+                            <QuotationPDF data={quoteData} />
+                        </div>
+
                     </div>
                 </div>
 
-                {/* DERECHA: BOTONES DE ACCIÓN */}
-                <div className="bg-white p-4 border-start d-flex flex-column gap-3 shadow-sm" style={{ minWidth: '300px' }}>
-                    <h6 className="text-inst-blue fw-bold border-bottom pb-2">Gestión</h6>
+                {/* LADO DERECHO: BOTONES (no-print automático por CSS global) */}
+                <div className="bg-white p-4 border-start d-flex flex-column gap-3 no-print" style={{ minWidth: '300px' }}>
+                    <h6 className="fw-bold border-bottom pb-2">Acciones</h6>
                     
-                    {/* Botón Imprimir */}
-                    <Button variant="outline-secondary" onClick={handlePrint} className="d-flex align-items-center justify-content-center gap-2 py-2">
-                        <Printer size={18} /> Imprimir / Guardar PDF
+                    {/* IMPRESIÓN NATIVA */}
+                    <Button variant="outline-secondary" onClick={() => window.print()} className="py-2">
+                        <Printer size={18} className="me-2"/> Imprimir / PDF
                     </Button>
 
-                    <div className="my-3 border-top"></div>
-                    <p className="small text-muted mb-2 text-center text-uppercase fw-bold">Decisión del Cliente</p>
-                    
-                    {/* Botones de Decisión (Sin Pendiente) */}
-                    <Button 
-                        variant="success" 
-                        onClick={() => handleStatus('Aceptada')}
-                        className="d-flex align-items-center justify-content-center gap-2 fw-bold text-white py-3"
-                    >
-                        <CheckCircle size={20} /> ACEPTAR
-                    </Button>
-
-                    <Button 
-                        variant="outline-danger" 
-                        onClick={() => handleStatus('Rechazada')}
-                        className="d-flex align-items-center justify-content-center gap-2 py-3"
-                    >
-                        <XCircle size={20} /> RECHAZAR
-                    </Button>
+                    <hr className="my-2"/>
+                    <Button variant="success" onClick={() => handleStatus('Aceptada')} className="py-3 fw-bold"><CheckCircle size={20} className="me-2"/> ACEPTAR</Button>
+                    <Button variant="outline-danger" onClick={() => handleStatus('Rechazada')} className="py-2"><XCircle size={20} className="me-2"/> RECHAZAR</Button>
                 </div>
             </div>
         )}
@@ -136,4 +101,4 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
   );
 };
 
-export default QuoteDetailModal;    
+export default QuoteDetailModal;
