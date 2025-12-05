@@ -69,7 +69,7 @@ const Dashboard = () => {
         <Col md={isAdmin ? 3 : 4}>
             <Card 
                 className="bg-inst-blue text-white border-0 shadow h-100 cursor-pointer hover-scale" 
-                onClick={() => console.log("Ir a Nueva Cotización")} // Aquí pondremos la navegación luego
+                onClick={() => navigate("/cotizaciones/nueva")}
                 style={{ transition: 'transform 0.2s' }}
             >
             <Card.Body className="d-flex flex-column justify-content-center align-items-center text-center">
@@ -79,6 +79,22 @@ const Dashboard = () => {
             </Card.Body>
             </Card>
         </Col>
+
+        {isAdmin && (
+            <Col md={isAdmin ? 3 : 4}>
+            <Card 
+                className="bg-inst-blue text-white border-0 shadow h-100 cursor-pointer hover-scale" 
+                onClick={() => navigate("/usuarios/registro")} 
+                style={{ transition: 'transform 0.2s' }}
+            >
+            <Card.Body className="d-flex flex-column justify-content-center align-items-center text-center">
+                <Plus size={32} className="text-inst-gold mb-2" />
+                <h5 className="fw-bold mb-0">Nuevo Usuario</h5>
+                <small className="text-white-50">Crear cuenta</small>
+            </Card.Body>
+            </Card>
+        </Col>
+            )}
       </Row>
 
       {/* --- TABLA DE COTIZACIONES RECIENTES (REAL) --- */}

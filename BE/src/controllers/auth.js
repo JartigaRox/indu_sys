@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 export const register = async (req, res) => {
-  const { username, password, rolId } = req.body;
+  const { username, password, rolId,email } = req.body;
 
   if (!username || !password || !rolId) {
     return res.status(400).json({ message: "Por favor envíe username, password y rolId" });
@@ -20,9 +20,10 @@ export const register = async (req, res) => {
     // 2. Insertar en SQL Server
     const result = await pool.request()
       .input("username", sql.NVarChar, username)
+      .input("email", sql.NVarChar, email)
       .input("passwordHash", sql.NVarChar, hash)
       .input("rolId", sql.Int, rolId)
-      .query("INSERT INTO Usuarios (Username, PasswordHash, RolID) VALUES (@username, @passwordHash, @rolId)");
+      .query("INSERT INTO Usuarios (Username, CorreoElectronico, PasswordHash, RolID) VALUES (@username, @email, @passwordHash, @rolId)");
 
     res.status(201).json({ message: "Usuario creado exitosamente" });
 

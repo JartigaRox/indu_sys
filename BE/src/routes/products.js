@@ -1,20 +1,28 @@
-// BE/src/routes/products.js
 import { Router } from 'express';
-import { createProduct, getProducts, getProductImage } from '../controllers/products.js';
-import { verifyToken } from '../middlewares/auth.js';
+// 1. IMPORTANTE: Asegúrate de importar getCategories y getSubcategories
+import { 
+    createProduct, 
+    getProducts, 
+    getProductImage, 
+    getCategories, 
+    getSubcategories 
+} from '../controllers/products.js';
+import { verifyToken, isSudo } from '../middlewares/auth.js';
 import multer from 'multer';
 
 const router = Router();
-
-// Configuración simple de Multer para guardar en memoria RAM temporalmente
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Rutas
-router.get('/', verifyToken, getProducts); // Ver lista (Privado)
-router.get('/image/:id', getProductImage); // Ver imagen (Público o Privado según prefieras, útil para <img src="...">)
+// Rutas Públicas
+router.get('/image/:id', getProductImage);
 
-// IMPORTANTE: 'imagen' es el nombre del campo que debes usar en Postman/Frontend
-router.post('/', verifyToken, upload.single('imagen'), createProduct); 
+// 2. IMPORTANTE: Estas son las rutas que cargan los combos
+router.get('/categories', verifyToken, getCategories);
+router.get('/subcategories/:catId', verifyToken, getSubcategories);
+
+// Rutas Principales
+router.get('/', verifyToken, getProducts);
+router.post('/', verifyToken, isSudo, upload.single('imagen'), createProduct);
 
 export default router;

@@ -84,6 +84,9 @@ CREATE TABLE Clientes (
     FOREIGN KEY (DistritoID) REFERENCES Distritos(DistritoID)
 );
 GO
+delete  from Clientes;
+DBCC CHECKIDENT ('Clientes', RESEED, 0);
+SELECT * FROM Pedidos;
 
 -- =============================================
 -- MÓDULO 3: COTIZACIONES (Maestro - Detalle)
@@ -595,3 +598,99 @@ INSERT INTO Distritos(Nombre, MunicipioID) VALUES
 ALTER TABLE Cotizaciones ADD Estado NVARCHAR(20) DEFAULT 'Pendiente';
 
 SELECT * FROM Productos;
+
+
+-- 1. CAMBIOS EN USUARIOS (Para recuperar contraseña)
+ALTER TABLE Usuarios ADD CorreoElectronico NVARCHAR(150);
+GO
+
+-- 2. CAMBIOS PARA MULTI-EMPRESA (Las 2 empresas)
+CREATE TABLE Empresas (
+    EmpresaID INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre NVARCHAR(100) NOT NULL,
+    Direccion NVARCHAR(200),
+    NRC NVARCHAR(50),
+);
+GO
+
+-- Insertamos las 2 empresas por defecto
+INSERT INTO Empresas (Nombre, Direccion, NRC) VALUES ('Empresa A S.A. de C.V.', 'San Salvador','');
+INSERT INTO Empresas (Nombre, Direccion) VALUES ('Empresa B Solutions', 'Santa Tecla','');
+GO
+
+SELECT * FROM Empresas;
+-- Agregamos la relación en Cotizaciones
+-- Verificar si la columna EmpresaID ya existe antes de agregarla
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Cotizaciones') AND name = 'EmpresaID')
+BEGIN
+    ALTER TABLE Cotizaciones ADD EmpresaID INT DEFAULT 1;
+END
+GO
+ALTER TABLE Cotizaciones ADD CONSTRAINT FK_Cotizaciones_Empresas FOREIGN KEY (EmpresaID) REFERENCES Empresas(EmpresaID);
+GO
+
+-- 3. CAMBIOS EN PRODUCTOS (Categorías y Subcategorías)
+CREATE TABLE Categorias (
+    CategoriaID INT IDENTITY(1,1) PRIMARY KEY,
+    CodigoCategoria NVARCHAR(3) NOT NULL -- Ej: OFI
+);
+
+SELECT * FROM Categorias;
+
+CREATE TABLE Subcategorias (
+    SubcategoriaID INT IDENTITY(1,1) PRIMARY KEY,
+    CodigoSubcategoria NVARCHAR(3) NOT NULL, -- Ej: ARM
+    CategoriaID INT NOT NULL,
+    FOREIGN KEY (CategoriaID) REFERENCES Categorias(CategoriaID)
+);
+GO
+
+DELETE FROM Categorias;
+DELETE FROM Subcategorias;
+CREATE TABLE Categorias (
+    CategoriaID INT IDENTITY(1,1) PRIMARY KEY,
+    CodigoCategoria NVARCHAR(3) NOT NULL, -- Ej: OFI
+    Nombre NVARCHAR(100) NOT NULL
+);
+ALTER TABLE Categorias ADD Nombre NVARCHAR(100) NOT NULL;
+
+CREATE TABLE Subcategorias (
+    SubcategoriaID INT IDENTITY(1,1) PRIMARY KEY,
+    CodigoSubcategoria NVARCHAR(3) NOT NULL, -- Ej: ARM
+    Nombre NVARCHAR(100) NOT NULL,
+    CategoriaID INT NOT NULL,
+    FOREIGN KEY (CategoriaID) REFERENCES Categorias(CategoriaID)
+);
+
+ALTER TABLE Subcategorias ADD Nombre NVARCHAR(100) NOT NULL;
+
+SELECT * FROM Categorias;
+
+INSERT INTO Categorias (CodigoCategoria, Nombre) VALUES 
+('OFI', 'OFICINA'), ('ESC', 'ESCOLARES'), ('HOS', 'HOSPITALARIOS'), ('INOX', 'ACERO INOXIDABLE'), ('RECR', 'RECREATIVOS'), ('OTR', 'OTROS');
+INSERT INTO Subcategorias (CodigoSubcategoria, Nombre, CategoriaID) VALUES 
+('ARM', 'ARMARIOS', 1), ('ARCH', 'ARCHIVOS', 1), ('MCOM', 'MUEBLES PARA COMPUTADORA', 1),('MCOM', 'MUEBLES PARA COMPUTADORA', 1),
+('ESCR', 'ESCRITORIOS', 1), ('EST', 'ESTANTES', 1), ('LOC', 'LOCKERS', 1),
+('LIB', 'LIBRERAS', 1), ('MES', 'MESAS', 1), ('REC', 'MUEBLES PARA RECEPCION', 1), ('SEJE', 'SILLAS ERGONOMICAS Y EJECUTIVAS', 1),
+('SEST', 'SILLAS PARA ESTUDIANTES', 2), ('PIZ', 'PIZARRAS', 2), ('PUP', 'PUPITRES', 2),
+('PARV', 'PARVULARIA', 2), ('HOSP', 'HOSPITALARIOS', 3), ('AINX', 'MUEBLES EN ACERO INOXIDABLE', 4),
+('MLAB', 'MUEBLES PARA LABORATORIO', 4), ('RECT', 'RECREATIVOS', 5), ('CARR', 'CARRETILLAS', 6),
+('MSES', 'MODULOS DE SILLA DE ESPERA', 6),('POD', 'PODIUMS', 6),('OTRS', 'OTROS', 6),
+('BIB', 'BIBLIOTECA', 2),('DIVE', 'DIVERSOS ESCOLARES', 2);
+
+-- Modificar tabla Productos para vincular Subcategoría (y quitar código manual si quieres, aunque lo dejaremos para llenarlo auto)
+ALTER TABLE Productos ADD SubcategoriaID INT;
+ALTER TABLE Productos ADD CONSTRAINT FK_Productos_Subcategorias FOREIGN KEY (SubcategoriaID) REFERENCES Subcategorias(SubcategoriaID);
+GO
+
+-- Modificar el tamaño de las columnas NVARCHAR para evitar truncamiento
+ALTER TABLE Categorias ALTER COLUMN CodigoCategoria NVARCHAR(25);
+ALTER TABLE Subcategorias ALTER COLUMN CodigoSubcategoria NVARCHAR(50);
+GO
+
+
+Select * FROM DetalleCotizaciones;
+DELETE FROM Productos;
+DELETE FROM DetalleCotizaciones;
+
+DBCC CHECKIDENT ('Subcategorias', RESEED, 0);
