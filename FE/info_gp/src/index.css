@@ -34,43 +34,60 @@ body {
    ESTILOS EXCLUSIVOS DE IMPRESIÓN
    (Esto solo se activa al darle "Imprimir")
    ========================================= */
+/* --- ESTILOS DE IMPRESIÓN (react-to-print) --- */
+
 @media print {
-  /* 1. Configuración de hoja */
+  /* 1. Ocultar encabezados/pies de página del NAVEGADOR (Fecha, URL, Título) */
   @page {
     size: auto;
-    margin: 0mm;
+    margin: 0mm; /* ¡Esto es la clave! Quita los textos automáticos de las esquinas */
   }
 
-  /* 2. Ocultar TODO lo que no sea el contenido imprimible */
-  body * {
-    visibility: hidden;
+  /* 2. Establecer el margen real de tu contenido dentro del body */
+  body {
+    margin: 15mm 15mm 15mm 15mm; /* Arriba, Derecha, Abajo, Izquierda */
+    -webkit-print-color-adjust: exact; /* Para que imprima colores de fondo exactos */
   }
 
-  /* 3. Mostrar SOLO el contenedor del PDF */
-  .printable-content, .printable-content * {
-    visibility: visible;
-  }
-
-  /* 4. Posicionar el PDF ocupando toda la hoja */
-  .printable-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background-color: white;
-    z-index: 9999;
-  }
-
-  /* 5. Asegurar que botones y modales NO salgan */
-  .no-print, button, .modal-header, .modal-footer, .card-header {
+  /* Ocultar elementos de la interfaz (botones, menús) */
+  .no-print {
     display: none !important;
   }
-  
-  /* Forzar colores de fondo */
-  body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
+}
+
+/* --- ESTRUCTURA DE LA TABLA "MÁGICA" --- */
+/* Esto asegura que el header se repita y el footer no se solape */
+
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Espacio reservado para el Header en cada página */
+.header-space {
+  height: 140px; /* Ajusta según la altura real de tu header */
+}
+
+/* Espacio reservado para el Footer en cada página */
+.footer-space {
+  height: 80px; /* IMPORTANTE: Debe ser igual o mayor que la altura de .print-footer-fixed */
+}
+
+/* El Footer REAL (Fijo visualmente abajo) */
+.print-footer-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px; /* Altura fija del footer */
+  padding-left: 15mm; /* Compensar margen del body si es necesario */
+  padding-right: 15mm;
+  background-color: white; /* Fondo blanco para tapar contenido si se pasa */
+  z-index: 100;
+}
+
+/* Bloque para evitar cortes feos */
+.avoid-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
 }

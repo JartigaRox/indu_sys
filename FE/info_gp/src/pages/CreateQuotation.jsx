@@ -2,10 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
-import { Plus, Printer, Save, ArrowLeft, Trash2, Edit2, RotateCcw } from 'lucide-react';
+import { Plus, Printer, Save, ArrowLeft, Trash2, Edit2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select'; 
-import html2pdf from 'html2pdf.js'; // Librería para PDF exacto
+import { useReactToPrint } from 'react-to-print'; // <--- CAMBIO 1: Importamos la librería correcta
 import Swal from 'sweetalert2';
 import QuotationPDF from '../componets/QuotationPDF';
 
@@ -15,8 +15,8 @@ const CreateQuotation = () => {
   const { id } = useParams();
   const isEditMode = !!id;
   
-  // Referencia para imprimir
-  const componentRef = useRef(null);
+  // Referencia para la impresión (apunta al componente oculto)
+  const printRef = useRef(null);
 
   // Estados de Datos
   const [clients, setClients] = useState([]);
@@ -37,19 +37,28 @@ const CreateQuotation = () => {
   const [editingIndex, setEditingIndex] = useState(-1);
   const [loading, setLoading] = useState(true);
 
-  // --- FUNCIÓN DE IMPRESIÓN HD ---
-  const handlePrint = () => {
-    const element = componentRef.current;
-    const opt = {
-      margin:       [0.3, 0.3, 0.3, 0.3], // Márgenes en pulgadas
-      filename:     `Cotizacion-${pdfData.numeroCotizacion}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
-      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-    html2pdf().set(opt).from(element).save();
+  // Datos calculados para el PDF (se usan tanto en vista previa como en impresión)
+  const clientData = clients.find(c => c.ClienteID === parseInt(selectedClient));
+  const companyData = companies.find(c => c.EmpresaID === parseInt(selectedCompanyId));
+  const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'XX';
+  const displayId = nextId ? nextId.toString().padStart(6, '0') : '000000';
+  const quoteNumber = `${initials}-${displayId}`; 
+
+  const pdfData = { 
+      cliente: clientData, 
+      items, 
+      user, 
+      numeroCotizacion: quoteNumber, 
+      fecha: new Date(), 
+      fechaEntrega,
+      empresa: companyData 
   };
+
+  // --- CONFIGURACIÓN DE IMPRESIÓN (CAMBIO 2) ---
+  const handlePrint = useReactToPrint({
+    contentRef: printRef, // Apuntamos a la referencia del div oculto
+    documentTitle: `Cotizacion-${quoteNumber}`,
+  });
 
   // Carga Inicial
   useEffect(() => {
@@ -72,12 +81,11 @@ const CreateQuotation = () => {
         }));
         setProductOptions(options);
 
-        // SIEMPRE usar el siguiente ID disponible (para crear nueva cotización)
+        // SIEMPRE usar el siguiente ID disponible
         setNextId(resNext.data.nextId);
         if (resCompanies.data.length > 0) setSelectedCompanyId(resCompanies.data[0].EmpresaID);
 
         if (isEditMode) {
-            // Cargar datos de la cotización original como base
             const resQuote = await api.get(`/quotations/${id}`);
             const q = resQuote.data;
             
@@ -92,9 +100,6 @@ const CreateQuotation = () => {
                 cantidad: i.Cantidad,
                 precio: i.PrecioUnitario
             })));
-            
-            // Nota: NO usamos el número de la cotización original, 
-            // siempre generamos uno nuevo con resNext.data.nextId
         }
         
         setLoading(false);
@@ -141,23 +146,6 @@ const CreateQuotation = () => {
     if (editingIndex === index) { setEditingIndex(-1); setQuantity(1); setPrice(0); setCurrentProduct(null); }
   };
 
-  // Datos para PDF
-  const clientData = clients.find(c => c.ClienteID === parseInt(selectedClient));
-  const companyData = companies.find(c => c.EmpresaID === parseInt(selectedCompanyId));
-  const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'XX';
-  const displayId = nextId ? nextId.toString().padStart(6, '0') : '000000';
-  const quoteNumber = `${initials}-${displayId}`; // Ej: JU-000015
-
-  const pdfData = { 
-      cliente: clientData, 
-      items, 
-      user, 
-      numeroCotizacion: quoteNumber, 
-      fecha: new Date(), 
-      fechaEntrega,
-      empresa: companyData 
-  };
-
   // Guardar
   const handleSave = async () => {
     if (!selectedClient || items.length === 0) { 
@@ -177,8 +165,6 @@ const CreateQuotation = () => {
     };
 
     try {
-      // SIEMPRE CREAR UNA NUEVA COTIZACIÓN (POST)
-      // Esto mantiene el historial de todas las versiones
       await api.post('/quotations', payload);
       
       if (isEditMode) {
@@ -297,8 +283,9 @@ const CreateQuotation = () => {
             <Card.Header className="bg-white py-3 d-flex justify-content-between align-items-center no-print">
               <h6 className="mb-0 fw-bold text-secondary">Vista Previa Documento</h6>
               <div className="d-flex gap-2">
+                {/* CAMBIO 3: El botón ahora llama al handlePrint de react-to-print */}
                 <Button variant="outline-secondary" size="sm" onClick={handlePrint} disabled={items.length === 0}>
-                    <Printer size={16} className="me-2" /> Descargar PDF
+                    <Printer size={16} className="me-2" /> Imprimir / Descargar
                 </Button>
                 <Button className="btn-institutional" size="sm" onClick={handleSave} disabled={items.length === 0}>
                     <Save size={16} className="me-2" /> Guardar
@@ -306,18 +293,26 @@ const CreateQuotation = () => {
               </div>
             </Card.Header>
             <Card.Body className="bg-secondary bg-opacity-10 d-flex justify-content-center overflow-auto p-4">
+              
+              {/* VISTA EN PANTALLA (ESCALADA) */}
+              {/* Nota: NO le ponemos ref={printRef} a esto para evitar que se imprima pequeño */}
               <div className="shadow bg-white" style={{ width: '210mm', minHeight: '297mm', transform: 'scale(0.75)', transformOrigin: 'top center' }}>
-                
-                {/* --- DIV ENVOLVENTE PARA IMPRESIÓN --- */}
-                <div ref={componentRef}>
-                    <QuotationPDF data={pdfData} />
-                </div>
-
+                  <QuotationPDF data={pdfData} />
               </div>
+
             </Card.Body>
           </Card>
         </Col>
       </Row>
+
+      {/* CAMBIO 4: COMPONENTE OCULTO PARA IMPRESIÓN */}
+      {/* Este div está oculto en la pantalla, pero react-to-print tomará su contenido para generar el PDF a tamaño real */}
+      <div style={{ display: 'none' }}>
+        <div ref={printRef}>
+          <QuotationPDF data={pdfData} />
+        </div>
+      </div>
+
     </div>
   );
 };

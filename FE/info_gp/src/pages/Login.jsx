@@ -27,7 +27,7 @@ function Login() {
           
           {/* Encabezado */}
           <div className="text-center mb-4">
-            <h2 className="fw-bold text-inst-blue mb-0">INFO GP</h2>
+            <img src="../../src/assets/Logo.jpg" alt="Logo" style={{ width: '100px', marginBottom: '10px' }} />
             <div style={{ height: '4px', width: '60px', backgroundColor: '#D4AF37', margin: '10px auto' }}></div>
             <small className="text-muted">Acceso Administrativo</small>
           </div>
