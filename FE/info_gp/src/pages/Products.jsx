@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Card, Table, Button, Container, Spinner, Badge, Form, InputGroup } from 'react-bootstrap';
-import { Plus, Package, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Package, Edit, Trash2, Search, FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import EditProductModal from '../componets/EditProductModal';
+import ImportProductsModal from '../componets/ImportProductsModal';
 
 const Products = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -68,9 +70,18 @@ const Products = () => {
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="text-inst-blue fw-bold mb-0">Inventario de Productos</h2>
-        <Button className="btn-institutional d-flex align-items-center gap-2" onClick={() => navigate('/productos/nuevo')}>
+        <div className="d-flex gap-2">
+          <Button 
+            variant="outline-success" 
+            className="d-flex align-items-center gap-2" 
+            onClick={() => setShowImportModal(true)}
+          >
+            <FileSpreadsheet size={18} /> Importar desde Excel
+          </Button>
+          <Button className="btn-institutional d-flex align-items-center gap-2" onClick={() => navigate('/productos/nuevo')}>
             <Plus size={18} /> Nuevo Producto
-        </Button>
+          </Button>
+        </div>
       </div>
 
       {/* Buscador */}
@@ -167,6 +178,14 @@ const Products = () => {
         show={showEditModal}
         onHide={() => setShowEditModal(false)}
         product={selectedProduct}
+        onSuccess={() => {
+          fetchProducts();
+        }}
+      />
+
+      <ImportProductsModal
+        show={showImportModal}
+        onHide={() => setShowImportModal(false)}
         onSuccess={() => {
           fetchProducts();
         }}
