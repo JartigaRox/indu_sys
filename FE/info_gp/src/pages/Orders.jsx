@@ -163,7 +163,7 @@ const Orders = () => {
                       <td className="text-end pe-4" style={{ backgroundColor: bgColor }}>
                           <div className="d-flex justify-content-end gap-2">
                               <Button 
-                                variant="outline-primary" 
+                                variant="light" 
                                 size="sm" 
                                 className="border shadow-sm" 
                                 title="Ver Detalle"

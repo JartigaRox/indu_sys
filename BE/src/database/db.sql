@@ -816,3 +816,5 @@ BEGIN
     ALTER TABLE Ordenes ADD FechaModificacion DATETIME NULL;
 END
 GO
+
+SELECT * FROM Clientes;

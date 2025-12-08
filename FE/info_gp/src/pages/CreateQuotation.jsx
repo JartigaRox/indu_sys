@@ -228,10 +228,6 @@ const CreateQuotation = () => {
                 </Form.Select>
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label className="small text-muted fw-bold">FECHA ENTREGA ESTIMADA</Form.Label>
-                <Form.Control type="date" value={fechaEntrega} onChange={(e) => setFechaEntrega(e.target.value)} />
-              </Form.Group>
             </Card.Body>
           </Card>
 

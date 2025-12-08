@@ -289,6 +289,7 @@ export const getFullOrderById = async (req, res) => {
     const { id } = req.params;
     try {
         const pool = await getConnection();
+        
         const result = await pool.request()
             .input('id', sql.Int, id)
             .query(`
@@ -297,11 +298,11 @@ export const getFullOrderById = async (req, res) => {
                     eo.Nombre as EstadoNombre,
                     eo.ColorHex,
                     ef.Nombre as EstadoFacturaNombre,
-                    uMod.Username as UsuarioModificacion
+                    c.NombreQuienCotiza as UsuarioModificacion
                 FROM Ordenes o
                 LEFT JOIN EstadosOrden eo ON o.EstadoOrdenID = eo.EstadoOrdenID
                 LEFT JOIN EstadosFactura ef ON o.EstadoFacturaID = ef.EstadoFacturaID
-                LEFT JOIN Usuarios uMod ON o.UsuarioModificacionID = uMod.UsuarioID
+                LEFT JOIN Cotizaciones c ON o.CotizacionID = c.CotizacionID
                 WHERE o.OrdenID = @id
             `);
         
@@ -311,6 +312,7 @@ export const getFullOrderById = async (req, res) => {
         
         res.json(result.recordset[0]);
     } catch (error) {
+        
         res.status(500).json({ message: error.message });
     }
 };
@@ -318,6 +320,7 @@ export const getFullOrderById = async (req, res) => {
 // Actualizar orden
 export const updateOrder = async (req, res) => {
     const { id } = req.params;
+    const userId = req.user?.id; // ID del usuario desde el token
     const body = req.body;
 
     const datos = {
@@ -349,9 +352,6 @@ export const updateOrder = async (req, res) => {
         const montoVenta = orden.recordset[0].MontoVenta;
         const pagoPendiente = montoVenta - totalPagado;
 
-        // Obtener el ID del usuario desde el token
-        const usuarioModificacionId = req.user?.id;
-
         await pool.request()
             .input('OrdenID', sql.Int, id)
             .input('FechaEntrega', sql.DateTime, datos.fechaEntrega)
@@ -365,8 +365,6 @@ export const updateOrder = async (req, res) => {
             .input('EstadoFacturaID', sql.Int, datos.estadoFacturaId)
             .input('EstadoOrdenID', sql.Int, datos.estadoOrdenId)
             .input('Observaciones', sql.NVarChar, datos.observaciones)
-            .input('UsuarioModificacionID', sql.Int, usuarioModificacionId)
-            .input('FechaModificacion', sql.DateTime, new Date())
             .query(`
                 UPDATE Ordenes SET
                     FechaEntrega = @FechaEntrega,
@@ -379,9 +377,7 @@ export const updateOrder = async (req, res) => {
                     PagoPendiente = @PagoPendiente,
                     EstadoFacturaID = @EstadoFacturaID,
                     EstadoOrdenID = @EstadoOrdenID,
-                    Observaciones = @Observaciones,
-                    UsuarioModificacionID = @UsuarioModificacionID,
-                    FechaModificacion = @FechaModificacion
+                    Observaciones = @Observaciones
                 WHERE OrdenID = @OrdenID
             `);
 

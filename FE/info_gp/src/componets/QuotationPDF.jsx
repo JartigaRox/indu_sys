@@ -15,18 +15,16 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
     <div className="d-flex justify-content-between align-items-start pb-2 mb-3" style={{ borderBottom: '2px solid #009FE3' }}>
       <div className="d-flex flex-column">
         <div className="d-flex align-items-center mb-2">
-          <img 
-            src={`${API_URL}/companies/logo/${empresa.EmpresaID}`} 
-            alt="Logo"
-            style={{ width: '60px', height: 'auto', marginRight: '15px', objectFit: 'contain' }}
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
           <div>
-            <h2 className="m-0 fw-bold" style={{ color: '#005689', fontSize: '24px', lineHeight: '1' }}>Don Bosco</h2>
-            <small className="fw-bold text-dark" style={{ fontSize: '11px' }}>Expertos en muebles y más.</small>
+            <img 
+              src="../../src/assets/IndusL.png" 
+              alt="Logo Info GP" 
+              style={{ width: '200px', height: 'auto', objectFit: 'contain' }} 
+            />
           </div>
         </div>
-        <h1 style={{ fontFamily: 'Times New Roman, serif', fontSize: '18px', color: '#222', margin: '0' }}>{empresa.Nombre}</h1>
+        <h1 style={{ fontFamily: 'Times New Roman, serif', fontSize: '18px', color: '#222', margin: '0', textAlign: 'justify' }}>{empresa.Nombre}</h1>
+        <h3 style={{ fontFamily: 'Times New Roman, serif', fontSize: '16px', color: '#555', margin: '0', textAlign: 'justify', width: '450px' }}>FABRICACION Y VENTA DE MUEBLES PARA OFICINA, ESCOLARES, HOSPITALARIOS, ACERO INOXIDABLE Y MÁS</h3>
       </div>
       <div className="text-end">
         <h2 className="fw-bold m-0" style={{ color: '#008CB4', fontSize: '24px' }}>COTIZACIÓN</h2>

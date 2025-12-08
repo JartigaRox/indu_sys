@@ -153,3 +153,38 @@ export const updateClient = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// ---------------------------------------------------
+// 5. ELIMINAR CLIENTE
+// ---------------------------------------------------
+export const deleteClient = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const pool = await getConnection();
+        
+        // Verificar si el cliente existe
+        const checkResult = await pool.request()
+            .input("id", sql.Int, id)
+            .query("SELECT ClienteID FROM Clientes WHERE ClienteID = @id");
+        
+        if (checkResult.recordset.length === 0) {
+            return res.status(404).json({ message: "Cliente no encontrado" });
+        }
+
+        // Eliminar el cliente
+        await pool.request()
+            .input("id", sql.Int, id)
+            .query("DELETE FROM Clientes WHERE ClienteID = @id");
+
+        res.json({ message: "Cliente eliminado correctamente" });
+    } catch (error) {
+        // Si hay error de clave foránea (cliente usado en cotizaciones u órdenes)
+        if (error.number === 547) {
+            return res.status(400).json({ 
+                message: "No se puede eliminar el cliente porque tiene cotizaciones u órdenes asociadas" 
+            });
+        }
+        res.status(500).json({ message: error.message });
+    }
+};

@@ -22,7 +22,7 @@ const Layout = () => {
         <div className="d-flex flex-column h-100 text-white">
             {/* Logo */}
             <div className="mb-4 text-center pt-2">
-                <img src="../../src/assets/Logo.jpg" alt="Logo" style={{ width: '100px', marginBottom: '10px' }} />
+                <img src="../../src/assets/gp.png" alt="Logo" style={{ width: '100px', marginBottom: '10px' }} />
                 <div style={{ height: '3px', width: '40px', backgroundColor: '#D4AF37', margin: '5px auto' }}></div>
             </div>
 

@@ -40,7 +40,7 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
             pagoPendiente: order.PagoPendiente,
             estadoOrden: order.EstadoNombre,
             estadoFactura: order.EstadoFacturaNombre || 'N/A',
-            usuarioModificacion: order.UsuarioModificacion || 'Sistema',
+            usuarioModificacion: order.UsuarioModificacion || 'No disponible',
             cliente: {
               NombreCliente: cotizacion.NombreCliente,
               DireccionCalle: cotizacion.DireccionCalle || '',

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Card, Table, Button, Container, Badge, Spinner, Alert, Form, InputGroup } from 'react-bootstrap';
-import { Plus, Users, MapPin, Phone, Search } from 'lucide-react';
+import { Plus, Users, MapPin, Phone, Search, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import EditClientModal from '../componets/EditClientModal';
+import ImportClientsModal from '../componets/ImportClientsModal';
 
 const Clients = () => {
     const navigate = useNavigate();
@@ -14,6 +16,7 @@ const Clients = () => {
     const [error, setError] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedClient, setSelectedClient] = useState(null);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     const fetchClients = async () => {
         try {
@@ -32,6 +35,34 @@ const Clients = () => {
     useEffect(() => {
         fetchClients();
     }, []);
+
+    // Eliminar cliente
+    const handleDeleteClient = async (clienteId, nombreCliente) => {
+        const result = await Swal.fire({
+            title: '¿Eliminar Cliente?',
+            html: `¿Estás seguro de eliminar el cliente:<br><strong>${nombreCliente}</strong>?<br><br>Esta acción no se puede deshacer.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, Eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/clients/${clienteId}`);
+                await Swal.fire('¡Eliminado!', 'El cliente ha sido eliminado correctamente', 'success');
+                fetchClients();
+            } catch (error) {
+                Swal.fire(
+                    'Error', 
+                    error.response?.data?.message || 'No se pudo eliminar el cliente', 
+                    'error'
+                );
+            }
+        }
+    };
 
     // Filtrar clientes según el término de búsqueda
     useEffect(() => {
@@ -61,12 +92,21 @@ const Clients = () => {
                     <h2 className="text-inst-blue fw-bold mb-0">Cartera de Clientes</h2>
                     <p className="text-muted small mb-0">Gestiona tus contactos comerciales</p>
                 </div>
-                <Button
-                    className="btn-institutional d-flex align-items-center gap-2"
-                    onClick={() => navigate('/clientes/nuevo')}
-                >
-                    <Plus size={18} /> Nuevo Cliente
-                </Button>
+                <div className="d-flex gap-2">
+                    <Button
+                        variant="outline-success"
+                        className="d-flex align-items-center gap-2"
+                        onClick={() => setShowImportModal(true)}
+                    >
+                        <FileSpreadsheet size={18} /> Importar desde Excel
+                    </Button>
+                    <Button
+                        className="btn-institutional d-flex align-items-center gap-2"
+                        onClick={() => navigate('/clientes/nuevo')}
+                    >
+                        <Plus size={18} /> Nuevo Cliente
+                    </Button>
+                </div>
             </div>
 
             {/* Buscador */}
@@ -152,17 +192,28 @@ const Clients = () => {
                                             </div>
                                         </td>
                                         <td className="text-end pe-4">
-                                            <Button
-                                                variant="link"
-                                                className="text-inst-blue p-0 fw-bold"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setSelectedClient(c);
-                                                    setShowEditModal(true);
-                                                }}
-                                            >
-                                                Editar
-                                            </Button>
+                                            <div className="d-flex justify-content-end gap-2">
+                                                <Button
+                                                    variant="link"
+                                                    className="text-inst-blue p-0 fw-bold"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setSelectedClient(c);
+                                                        setShowEditModal(true);
+                                                    }}
+                                                >
+                                                    Editar
+                                                </Button>
+                                                <Button
+                                                    variant="link"
+                                                    className="text-danger p-0"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteClient(c.ClienteID, c.NombreCliente)}
+                                                    title="Eliminar Cliente"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -176,6 +227,14 @@ const Clients = () => {
                 show={showEditModal}
                 onHide={() => setShowEditModal(false)}
                 client={selectedClient}
+                onSuccess={() => {
+                    fetchClients();
+                }}
+            />
+
+            <ImportClientsModal
+                show={showImportModal}
+                onHide={() => setShowImportModal(false)}
                 onSuccess={() => {
                     fetchClients();
                 }}
