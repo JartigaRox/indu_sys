@@ -801,3 +801,18 @@ CREATE TABLE TiposVendedor (
     ALTER TABLE Usuarios DROP COLUMN TipoVendedor;
     ALTER TABLE Usuarios ADD TipoVendedorID INT;
     ALTER TABLE Usuarios ADD CONSTRAINT FK_Usuarios_TiposVendedor FOREIGN KEY (TipoVendedorID) REFERENCES TiposVendedor(TipoVendedorID);
+
+-- Agregar columnas para tracking de modificaciones en Ordenes
+-- Ejecutar este script si las columnas no existen:
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'Ordenes') AND name = 'UsuarioModificacionID')
+BEGIN
+    ALTER TABLE Ordenes ADD UsuarioModificacionID INT NULL;
+    ALTER TABLE Ordenes ADD CONSTRAINT FK_Ordenes_UsuarioModificacion FOREIGN KEY (UsuarioModificacionID) REFERENCES Usuarios(UsuarioID);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'Ordenes') AND name = 'FechaModificacion')
+BEGIN
+    ALTER TABLE Ordenes ADD FechaModificacion DATETIME NULL;
+END
+GO

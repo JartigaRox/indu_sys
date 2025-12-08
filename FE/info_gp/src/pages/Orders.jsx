@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
 import { Card, Table, Button, Container, Badge, Spinner, InputGroup, Form } from 'react-bootstrap';
-import { Printer, Edit, Search } from 'lucide-react';
+import { Printer, Edit, Search, Eye } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import OrderPDF from '../componets/OrderPDF';
 import EditOrderModal from '../componets/EditOrderModal';
+import OrderDetailModal from '../componets/OrderDetailModal';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -19,6 +20,11 @@ const Orders = () => {
   // Estado para edición
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+
+  // Estado para modal de detalle
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -156,6 +162,18 @@ const Orders = () => {
                       </td>
                       <td className="text-end pe-4" style={{ backgroundColor: bgColor }}>
                           <div className="d-flex justify-content-end gap-2">
+                              <Button 
+                                variant="outline-primary" 
+                                size="sm" 
+                                className="border shadow-sm" 
+                                title="Ver Detalle"
+                                onClick={() => {
+                                  setSelectedOrderId(order.OrdenID);
+                                  setShowDetailModal(true);
+                                }}
+                              >
+                                  <Eye size={16} />
+                              </Button>
                               <Button variant="light" size="sm" className="border shadow-sm" title="Imprimir" onClick={() => preparePrint(order.CotizacionID)}>
                                   <Printer size={16} />
                               </Button>
@@ -201,6 +219,14 @@ const Orders = () => {
           fetchOrders();
           setShowEditModal(false);
         }}
+      />
+
+      {/* Modal de Detalle */}
+      <OrderDetailModal
+        show={showDetailModal}
+        onHide={() => setShowDetailModal(false)}
+        orderId={selectedOrderId}
+        onRefresh={() => fetchOrders()}
       />
 
     </Container>
