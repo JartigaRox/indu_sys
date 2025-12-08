@@ -1,157 +1,208 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
-import { Card, Table, Button, Container, Badge, Spinner, Alert, Modal } from 'react-bootstrap';
-import { FileText, Eye, Printer, X } from 'lucide-react';
-import html2pdf from 'html2pdf.js';
+import { Card, Table, Button, Container, Badge, Spinner, InputGroup, Form } from 'react-bootstrap';
+import { Printer, Edit, Search } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print';
 import OrderPDF from '../componets/OrderPDF';
+import EditOrderModal from '../componets/EditOrderModal';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
-  const [showModal, setShowModal] = useState(false);
+  // Estado para impresión
+  const [selectedOrderForPdf, setSelectedOrderForPdf] = useState(null);
+  const printRef = useRef();
+
+  // Estado para edición
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  
-  const componentRef = useRef(null);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await api.get('/orders');
-        setOrders(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrders();
-  }, []);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: selectedOrderForPdf ? `Orden_${selectedOrderForPdf.NumeroCotizacion}` : 'Orden',
+  });
 
-  const handleOpenOrder = async (id) => {
-    setShowModal(true);
-    setLoadingDetail(true);
+  // 1. CARGAR ÓRDENES
+  const fetchOrders = async () => {
+    setLoading(true);
     try {
-        const res = await api.get(`/orders/${id}`);
-        const data = res.data;
-        
-        const formattedData = {
-            cliente: {
-                NombreCliente: data.NombreCliente,
-                DireccionCalle: data.DireccionCalle,
-                Municipio: data.Municipio,
-                Departamento: data.Departamento,
-                TelefonoCliente: data.TelefonoCliente,
-                AtencionA: data.AtencionA
-            },
-            items: data.items.map(i => ({
-                cantidad: i.Cantidad,
-                nombre: i.NombreProducto,
-                codigo: i.CodigoProducto,
-                productoId: i.ProductoID,
-                descripcion: i.Descripcion
-            })),
-            // ⚠️ CAMBIO AQUÍ: Agregamos 'OP-' al código original
-            numeroCotizacion: `OP-${data.NumeroCotizacion}`, 
-            fecha: data.FechaRealizacion,
-            empresa: {
-                EmpresaID: data.EmpresaID,
-                Nombre: data.EmpresaNombre,
-                Direccion: data.EmpresaDireccion,
-                NRC: data.NRC,
-                Telefono: data.EmpresaTelefono,
-                CorreoElectronico: data.EmpresaEmail,
-                PaginaWeb: data.EmpresaWeb
-            }
-        };
-        setSelectedOrder(formattedData);
-    } catch (error) {
-        console.error(error);
-        alert("Error al cargar el detalle de la orden");
-        setShowModal(false);
+      const res = await api.get('/orders'); 
+      setOrders(res.data);
+      setFilteredOrders(res.data);
+    } catch (err) {
+      console.error("Error cargando órdenes:", err);
     } finally {
-        setLoadingDetail(false);
+      setLoading(false);
     }
   };
 
-  const handlePrint = () => {
-    const element = componentRef.current;
-    const opt = {
-      margin: 0,
-      filename: `${selectedOrder?.numeroCotizacion || 'Orden'}.pdf`, // El nombre del archivo también tendrá OP-
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save();
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  // Buscador
+  useEffect(() => {
+    const term = searchTerm.toLowerCase();
+    const filtered = orders.filter(o => 
+      o.NumeroOrden?.toLowerCase().includes(term) ||
+      o.NombreCliente?.toLowerCase().includes(term) ||
+      o.NombreEmpresa?.toLowerCase().includes(term)
+    );
+    setFilteredOrders(filtered);
+  }, [searchTerm, orders]);
+
+  // Preparar datos para imprimir (Carga detalles completos)
+  const preparePrint = async (orderId) => {
+    try {
+        const res = await api.get(`/orders/${orderId}`); // Reutilizamos endpoint de detalle
+        // Combinamos datos
+        const fullData = { ...res.data, items: res.data.items, empresa: res.data.EmpresaID ? { Nombre: res.data.EmpresaNombre, Direccion: res.data.EmpresaDireccion } : {} };
+        
+        setSelectedOrderForPdf(fullData);
+        setTimeout(() => handlePrint(), 200); // Pequeño delay para renderizar
+    } catch (error) {
+        console.error(error);
+    }
   };
 
   return (
     <Container className="py-4">
-      <h2 className="text-inst-blue fw-bold mb-4">Órdenes de Pedido</h2>
+      <h2 className="text-inst-blue fw-bold mb-4">Gestión de Órdenes</h2>
 
+      {/* Buscador */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2">
+          <InputGroup size="sm">
+            <InputGroup.Text className="bg-white border-end-0"><Search size={16}/></InputGroup.Text>
+            <Form.Control 
+              placeholder="Buscar por cliente o referencia..." 
+              className="border-start-0"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </InputGroup>
+        </Card.Body>
+      </Card>
+
+      {/* Tabla de Órdenes */}
       <Card className="shadow-sm border-0">
         <Card.Body className="p-0">
           {loading ? <div className="p-5 text-center"><Spinner animation="border"/></div> : (
             <Table hover responsive className="mb-0 align-middle">
-              <thead className="bg-dark text-white small">
+              <thead className="bg-light small text-secondary">
                 <tr>
-                  <th className="ps-4">Orden #</th> {/* Cambiamos el título de la columna */}
+                  <th className="ps-4">Ref</th>
                   <th>Cliente</th>
-                  <th>Fecha Aprobación</th>
-                  <th>Empresa</th>
+                  <th>Entrega</th>
+                  <th>Estado</th>
+                  <th>Pagos</th>
                   <th className="text-end pe-4">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {orders.map(o => (
-                  <tr key={o.CotizacionID}>
-                    {/* Mostramos OP- también en la tabla para consistencia */}
-                    <td className="ps-4 fw-bold text-inst-blue">OP-{o.NumeroCotizacion}</td>
-                    <td>{o.NombreCliente}</td>
-                    <td>{new Date(o.FechaRealizacion).toLocaleDateString()}</td>
-                    <td><Badge bg="light" text="dark" className="border">{o.NombreEmpresa}</Badge></td>
-                    <td className="text-end pe-4">
-                        <Button variant="outline-primary" size="sm" onClick={() => handleOpenOrder(o.CotizacionID)}>
-                            <Eye size={18} /> Ver Orden
-                        </Button>
-                    </td>
-                  </tr>
-                ))}
-                {orders.length === 0 && <tr><td colSpan="5" className="text-center py-4">No hay órdenes pendientes.</td></tr>}
+                {filteredOrders.map(order => {
+                  // Calcular contraste del texto basado en el color de fondo
+                  const getTextColor = (hexColor) => {
+                    if (!hexColor) return '#000';
+                    const hex = hexColor.replace('#', '');
+                    const r = parseInt(hex.substr(0, 2), 16);
+                    const g = parseInt(hex.substr(2, 2), 16);
+                    const b = parseInt(hex.substr(4, 2), 16);
+                    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                    return brightness > 128 ? '#000' : '#fff';
+                  };
+
+                  const textColor = getTextColor(order.ColorHex);
+                  const bgColor = order.ColorHex || '#ffffff';
+
+                  return (
+                    <tr 
+                      key={order.OrdenID} 
+                      style={{ 
+                        backgroundColor: bgColor,
+                        color: textColor
+                      }}
+                    >
+                      <td className="ps-4 fw-bold" style={{ backgroundColor: bgColor, color: textColor }}>
+                          {order.NumeroOrden}
+                          <div className="small fw-normal" style={{ opacity: 0.8 }}>{order.ElaboradoPor}</div>
+                      </td>
+                      <td style={{ backgroundColor: bgColor, color: textColor }}>{order.NombreCliente}</td>
+                      <td style={{ backgroundColor: bgColor, color: textColor }}>
+                        {order.FechaEntrega ? new Date(order.FechaEntrega).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td style={{ backgroundColor: bgColor }}>
+                          <Badge 
+                            style={{ 
+                              backgroundColor: bgColor,
+                              color: textColor,
+                              border: `1px solid ${textColor}`
+                            }}
+                            className="fw-normal"
+                          >
+                              {order.EstadoNombre || 'Sin Estado'}
+                          </Badge>
+                      </td>
+                      <td className="small" style={{ backgroundColor: bgColor }}>
+                          <div className="fw-bold" style={{ color: textColor === '#fff' ? '#90EE90' : '#198754' }}>
+                            Pagado: ${order.TotalPagado?.toFixed(2)}
+                          </div>
+                          <div style={{ color: textColor === '#fff' ? '#FFB6C1' : '#dc3545' }}>
+                            Pendiente: ${order.PagoPendiente?.toFixed(2)}
+                          </div>
+                      </td>
+                      <td className="text-end pe-4" style={{ backgroundColor: bgColor }}>
+                          <div className="d-flex justify-content-end gap-2">
+                              <Button variant="light" size="sm" className="border shadow-sm" title="Imprimir" onClick={() => preparePrint(order.CotizacionID)}>
+                                  <Printer size={16} />
+                              </Button>
+                              <Button 
+                                variant="light" 
+                                size="sm" 
+                                className="border shadow-sm" 
+                                title="Editar"
+                                onClick={() => {
+                                  setSelectedOrder(order);
+                                  setShowEditModal(true);
+                                }}
+                              >
+                                  <Edit size={16} />
+                              </Button>
+                          </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filteredOrders.length === 0 && (
+                    <tr><td colSpan="6" className="text-center py-5 text-muted">No hay órdenes registradas.</td></tr>
+                )}
               </tbody>
             </Table>
           )}
         </Card.Body>
       </Card>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="xl">
-        <Modal.Header closeButton>
-            <Modal.Title>Detalle de Orden</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="bg-light p-0">
-            {loadingDetail ? <div className="p-5 text-center"><Spinner animation="border"/></div> : (
-                <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '70vh' }}>
-                    <div className="flex-grow-1 p-4 bg-secondary bg-opacity-25 text-center overflow-auto">
-                        <div className="d-inline-block shadow bg-white text-start" style={{ width: '210mm', minHeight: '297mm', transform: 'scale(0.85)', transformOrigin: 'top center' }}>
-                            <div ref={componentRef}>
-                                <OrderPDF data={selectedOrder} />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white p-4 border-start" style={{ minWidth: '250px' }}>
-                        <Button variant="dark" className="w-100 mb-3 py-2" onClick={handlePrint}>
-                            <Printer className="me-2"/> Descargar PDF
-                        </Button>
-                        <Button variant="outline-secondary" className="w-100" onClick={() => setShowModal(false)}>
-                            Cerrar
-                        </Button>
-                    </div>
-                </div>
-            )}
-        </Modal.Body>
-      </Modal>
+      {/* PDF Oculto */}
+      <div style={{ display: 'none' }}>
+        <div ref={printRef}>
+            <OrderPDF data={selectedOrderForPdf} />
+        </div>
+      </div>
+
+      {/* Modal de Edición */}
+      <EditOrderModal 
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        order={selectedOrder}
+        onSuccess={() => {
+          fetchOrders();
+          setShowEditModal(false);
+        }}
+      />
+
     </Container>
   );
 };

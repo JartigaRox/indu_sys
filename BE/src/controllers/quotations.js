@@ -251,19 +251,39 @@ export const updateQuoteStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body; 
     
+    // Validación de parámetros
+    if (!id || !status) {
+        return res.status(400).json({ message: 'ID y estado son requeridos' });
+    }
+    
     // Obtenemos el usuario del token (req.user viene del middleware verifyToken)
     const usuarioDecision = req.user ? req.user.username : 'Sistema';
 
     try {
         const pool = await getConnection();
+        const cotizacionId = parseInt(id);
+        
+        if (isNaN(cotizacionId)) {
+            return res.status(400).json({ message: 'ID de cotización inválido' });
+        }
+        
+        // Si el estado es "Rechazada", eliminamos la orden asociada (si existe)
+        if (status === 'Rechazada') {
+            await pool.request()
+                .input("cotizacionId", sql.Int, cotizacionId)
+                .query("DELETE FROM Ordenes WHERE CotizacionID = @cotizacionId");
+        }
+        
+        // Actualizamos el estado de la cotización
         await pool.request()
-            .input("id", sql.Int, id)
+            .input("id", sql.Int, cotizacionId)
             .input("status", sql.NVarChar, status)
-            .input("user", sql.NVarChar, usuarioDecision) // <--- Guardamos quién decidió
+            .input("user", sql.NVarChar, usuarioDecision)
             .query("UPDATE Cotizaciones SET Estado = @status, UsuarioDecision = @user WHERE CotizacionID = @id");
 
         res.json({ message: `Estado actualizado a ${status}` });
     } catch (error) {
+        console.error('Error en updateQuoteStatus:', error);
         res.status(500).json({ message: error.message });
     }
 };

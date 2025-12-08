@@ -703,5 +703,101 @@ ALTER TABLE Cotizaciones ADD FechaEntregaEstimada DATETIME;
 -- Usuario que aceptó o rechazó (Guardaremos el nombre para el historial)
 ALTER TABLE Cotizaciones ADD UsuarioDecision NVARCHAR(50);
 GO
+-------------------------------------------------------------------------------
+-- 1. Agregar columna tipo_vendedor a usuarios
+ALTER TABLE Usuarios ADD TipoVendedor NVARCHAR(50) NULL;
+SELECT * FROM Usuarios;
+GO
+-- 2. Tabla para Métodos de Pago (Para que sea dinámico)
+CREATE TABLE MetodosPago (
+    MetodoID INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre NVARCHAR(50) NOT NULL
+);
+GO
 
-select * from Cotizaciones;
+INSERT INTO MetodosPago (Nombre) VALUES 
+('Transferencia'), ('Depósito'), ('Cheque'), ('Tarjeta'), ('Efectivo');
+GO
+
+-- 3. Tabla para Estados de Factura
+CREATE TABLE EstadosFactura (
+    EstadoFacturaID INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre NVARCHAR(50) NOT NULL
+);
+GO
+
+INSERT INTO EstadosFactura (Nombre) VALUES 
+('No facturado'), ('Factura anticipo'), ('Facturado total');
+GO
+
+-- 4. Tabla para Estados de la Orden (Con Colores)
+CREATE TABLE EstadosOrden (
+    EstadoOrdenID INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre NVARCHAR(100) NOT NULL,
+    ColorHex NVARCHAR(20) NOT NULL
+);
+GO
+
+INSERT INTO EstadosOrden (Nombre, ColorHex) VALUES 
+('Pagado y finalizado', '#FFFFFF'),
+('Entregado y pendiente de pago', '#a0d4f9ff'),
+('Pendiente de entrega', '#c2fbc7ff'),
+('Pagado y pendiente de entrega', '#FFECB3'),
+('Pago anticipo y pendiente de entrega', '#f8c8d8ff');
+GO
+
+-- 5. TABLA PRINCIPAL: ORDENES DE PEDIDO
+CREATE TABLE Ordenes (
+    OrdenID INT IDENTITY(1,1) PRIMARY KEY,
+    NumeroOrden NVARCHAR(50) NOT NULL UNIQUE, -- OP-XXXX (generado a partir del número de cotización)
+    CotizacionID INT NOT NULL,
+    UsuarioID INT NOT NULL,
+    FechaEntrega DATE,
+    UbicacionEntrega NVARCHAR(255),
+    
+    -- Pagos
+    MontoVenta DECIMAL(18,2),
+    PagoAnticipo DECIMAL(18,2) DEFAULT 0,
+    MetodoAnticipoID INT,
+    DocAnticipoPDF NVARCHAR(255),
+    
+    PagoComplemento DECIMAL(18,2) DEFAULT 0,
+    MetodoComplementoID INT,
+    DocComplementoPDF NVARCHAR(255),
+    
+    TotalPagado DECIMAL(18,2) DEFAULT 0,
+    PagoPendiente DECIMAL(18,2) DEFAULT 0,
+    
+    -- Estados
+    EstadoFacturaID INT,
+    EstadoOrdenID INT,
+    
+    Observaciones NVARCHAR(MAX),
+    FechaCreacion DATETIME DEFAULT GETDATE(),
+    
+    FOREIGN KEY (CotizacionID) REFERENCES Cotizaciones(CotizacionID),
+    FOREIGN KEY (UsuarioID) REFERENCES Usuarios(UsuarioID),
+    FOREIGN KEY (MetodoAnticipoID) REFERENCES MetodosPago(MetodoID),
+    FOREIGN KEY (MetodoComplementoID) REFERENCES MetodosPago(MetodoID),
+    FOREIGN KEY (EstadoFacturaID) REFERENCES EstadosFactura(EstadoFacturaID),
+    FOREIGN KEY (EstadoOrdenID) REFERENCES EstadosOrden(EstadoOrdenID)
+);
+GO
+
+SELECT * FROM Ordenes;
+
+CREATE TABLE TiposVendedor (
+        TipoVendedorID INT IDENTITY(1,1) PRIMARY KEY,
+        Nombre NVARCHAR(50) NOT NULL UNIQUE
+    );
+    
+    -- Insertar los tipos por defecto
+    INSERT INTO TiposVendedor (Nombre) VALUES 
+    ('Sala de ventas'),
+    ('Venta externa');
+    INSERT INTO TiposVendedor (Nombre) VALUES 
+    ('Oficina');
+
+    ALTER TABLE Usuarios DROP COLUMN TipoVendedor;
+    ALTER TABLE Usuarios ADD TipoVendedorID INT;
+    ALTER TABLE Usuarios ADD CONSTRAINT FK_Usuarios_TiposVendedor FOREIGN KEY (TipoVendedorID) REFERENCES TiposVendedor(TipoVendedorID);

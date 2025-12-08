@@ -9,17 +9,24 @@ import locationRoutes from './routes/locations.js';
 import quotationRoutes from './routes/quotations.js';
 import ordersRoutes from './routes/orders.js';
 import companiesRoutes from './routes/companies.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Inicializar configuración
 dotenv.config();
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middlewares
 app.use(express.json()); // Express ahora trae su propio parser, ya no necesitas body-parser aparte
 app.use(cors());
 
 
+
+// Servir archivos estáticos (para acceder a PDFs subidos)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Usar Rutas
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productsRoutes);

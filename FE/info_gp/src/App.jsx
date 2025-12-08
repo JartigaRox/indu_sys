@@ -7,12 +7,10 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
 import CreateClient from './pages/CreateClient';
-import EditClient from './pages/EditClient';
 import Quotations from './pages/Quotations';
 import CreateQuotation from './pages/CreateQuotation';
 import Products from './pages/Products';
 import CreateProduct from './pages/CreateProduct';
-import EditProduct from './pages/EditProduct';
 import Orders from './pages/Orders';
 import RegisterUser from './pages/RegisterUser';
 
@@ -40,7 +38,6 @@ function App() {
             {/* Clientes */}
             <Route path="/clientes" element={<Clients />} />
             <Route path="/clientes/nuevo" element={<CreateClient />} />
-            <Route path="/clientes/editar/:id" element={<EditClient />} />
 
             {/* Cotizaciones */}
             <Route path="/cotizaciones" element={<Quotations />} />
@@ -50,7 +47,6 @@ function App() {
             {/* Productos */}
             <Route path="/productos" element={<Products />} />
             <Route path="/productos/nuevo" element={<CreateProduct />} />
-            <Route path="/productos/editar/:id" element={<EditProduct />} />
 
             {/* Ordenes y Usuarios */}
             <Route path="/ordenes" element={<Orders />} />

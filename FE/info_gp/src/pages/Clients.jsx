@@ -3,6 +3,7 @@ import api from '../api/axios';
 import { Card, Table, Button, Container, Badge, Spinner, Alert, Form, InputGroup } from 'react-bootstrap';
 import { Plus, Users, MapPin, Phone, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import EditClientModal from '../componets/EditClientModal';
 
 const Clients = () => {
     const navigate = useNavigate();
@@ -11,20 +12,24 @@ const Clients = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedClient, setSelectedClient] = useState(null);
+
+    const fetchClients = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get('/clients');
+            setClients(res.data);
+            setFilteredClients(res.data);
+        } catch (err) {
+            console.error(err);
+            setError("Error al cargar la lista de clientes");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchClients = async () => {
-            try {
-                const res = await api.get('/clients');
-                setClients(res.data);
-                setFilteredClients(res.data);
-            } catch (err) {
-                console.error(err);
-                setError("Error al cargar la lista de clientes");
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchClients();
     }, []);
 
@@ -151,8 +156,10 @@ const Clients = () => {
                                                 variant="link"
                                                 className="text-inst-blue p-0 fw-bold"
                                                 size="sm"
-                                                // ACTUALIZAR ESTO:
-                                                onClick={() => navigate(`/clientes/editar/${c.ClienteID}`)}
+                                                onClick={() => {
+                                                    setSelectedClient(c);
+                                                    setShowEditModal(true);
+                                                }}
                                             >
                                                 Editar
                                             </Button>
@@ -164,6 +171,15 @@ const Clients = () => {
                     )}
                 </Card.Body>
             </Card>
+
+            <EditClientModal
+                show={showEditModal}
+                onHide={() => setShowEditModal(false)}
+                client={selectedClient}
+                onSuccess={() => {
+                    fetchClients();
+                }}
+            />
         </Container>
     );
 };

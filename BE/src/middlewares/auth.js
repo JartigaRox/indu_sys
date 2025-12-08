@@ -18,7 +18,11 @@ export const verifyToken = (req, res, next) => {
     req.user = decoded; // Guardamos los datos del usuario en la petición para usarlos luego
     next(); // Todo bien, pase adelante
   } catch (error) {
-    return res.status(401).json({ message: "Token inválido o expirado" });
+    // Distinguir entre token expirado y token inválido
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: "Tu sesión ha expirado. Por favor, renueva tu token." });
+    }
+    return res.status(401).json({ message: "Token inválido" });
   }
 };
 

@@ -1,14 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Modal, Form, Button, Row, Col, Spinner, Alert } from 'react-bootstrap';
+import { Save, MapPin } from 'lucide-react';
 import api from '../api/axios';
-import { Card, Form, Button, Container, Row, Col, Alert, Spinner } from 'react-bootstrap';
-import { Edit, Save, ArrowLeft, MapPin } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
-const EditClient = () => {
-  const navigate = useNavigate();
-  const { id } = useParams(); // Obtenemos el ID de la URL
-
-  // Estados del formulario
+const EditClientModal = ({ show, onHide, client, onSuccess }) => {
   const [formData, setFormData] = useState({
     codigo: '',
     nombre: '',
@@ -19,65 +15,62 @@ const EditClient = () => {
     distritoId: ''
   });
 
-  // Estados catálogos
   const [departamentos, setDepartamentos] = useState([]);
   const [municipios, setMunicipios] = useState([]);
   const [distritos, setDistritos] = useState([]);
-
-  // Selecciones temporales
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedMun, setSelectedMun] = useState('');
-
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingData, setLoadingData] = useState(false);
   const [loadingSave, setLoadingSave] = useState(false);
-  const [error, setError] = useState(null);
 
-  // 1. CARGA INICIAL (Datos Cliente + Departamentos)
+  // Cargar datos completos del cliente cuando se abre el modal
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        // A. Cargar Departamentos base
-        const resDepts = await api.get('/locations/departamentos');
-        setDepartamentos(resDepts.data);
+    if (show && client?.ClienteID) {
+      const loadClientData = async () => {
+        setLoadingData(true);
+        try {
+          // A. Cargar Departamentos base
+          const resDepts = await api.get('/locations/departamentos');
+          setDepartamentos(resDepts.data);
 
-        // B. Cargar Datos del Cliente
-        const resClient = await api.get(`/clients/${id}`);
-        const client = resClient.data;
+          // B. Cargar Datos del Cliente
+          const resClient = await api.get(`/clients/${client.ClienteID}`);
+          const clientData = resClient.data;
 
-        // C. Llenar formulario base
-        setFormData({
-            codigo: client.codigo,
-            nombre: client.nombre,
-            atencionA: client.atencionA,
-            telefono: client.telefono,
-            email: client.email,
-            direccion: client.direccion,
-            distritoId: client.distritoId
-        });
+          // C. Llenar formulario base
+          setFormData({
+            codigo: clientData.codigo,
+            nombre: clientData.nombre,
+            atencionA: clientData.atencionA,
+            telefono: clientData.telefono,
+            email: clientData.email,
+            direccion: clientData.direccion,
+            distritoId: clientData.distritoId
+          });
 
-        // D. Magia de Cascada: Cargar los combos dependientes
-        // 1. Seleccionar Dept y cargar sus municipios
-        setSelectedDept(client.DepartamentoID);
-        const resMun = await api.get(`/locations/municipios/${client.DepartamentoID}`);
-        setMunicipios(resMun.data);
+          // D. Cargar cascada de ubicaciones
+          if (clientData.DepartamentoID) {
+            setSelectedDept(clientData.DepartamentoID);
+            const resMun = await api.get(`/locations/municipios/${clientData.DepartamentoID}`);
+            setMunicipios(resMun.data);
 
-        // 2. Seleccionar Mun y cargar sus distritos
-        setSelectedMun(client.MunicipioID);
-        const resDist = await api.get(`/locations/distritos/${client.MunicipioID}`);
-        setDistritos(resDist.data);
+            if (clientData.MunicipioID) {
+              setSelectedMun(clientData.MunicipioID);
+              const resDist = await api.get(`/locations/distritos/${clientData.MunicipioID}`);
+              setDistritos(resDist.data);
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          Swal.fire('Error', 'No se pudo cargar la información del cliente', 'error');
+        } finally {
+          setLoadingData(false);
+        }
+      };
+      loadClientData();
+    }
+  }, [show, client]);
 
-      } catch (err) {
-        console.error(err);
-        setError("No se pudo cargar la información del cliente o hace falta agregar datos.");
-      } finally {
-        setLoadingData(false);
-      }
-    };
-
-    loadInitialData();
-  }, [id]);
-
-  // Manejadores de cambios (Igual que en CreateClient)
   const handleDeptChange = async (e) => {
     const deptId = e.target.value;
     setSelectedDept(deptId);
@@ -108,54 +101,51 @@ const EditClient = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Guardar Cambios
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.nombre) {
+      return Swal.fire('Atención', 'El nombre del cliente es obligatorio', 'warning');
+    }
+
     setLoadingSave(true);
     try {
-      await api.put(`/clients/${id}`, formData);
-      alert("Cliente actualizado correctamente");
-      navigate('/clientes');
+      await api.put(`/clients/${client.ClienteID}`, formData);
+      await Swal.fire('¡Actualizado!', 'Cliente modificado correctamente', 'success');
+      onSuccess();
+      onHide();
     } catch (err) {
       console.error(err);
-      setError("Error al actualizar cliente");
+      Swal.fire('Error', err.response?.data?.message || 'No se pudo actualizar el cliente', 'error');
     } finally {
       setLoadingSave(false);
     }
   };
 
-  if (loadingData) return <div className="text-center p-5"><Spinner animation="border" /></div>;
-
   return (
-    <Container className="py-4">
-      <div className="d-flex align-items-center mb-4">
-        <Button variant="link" onClick={() => navigate('/clientes')} className="text-secondary p-0 me-3">
-          <ArrowLeft size={24} />
-        </Button>
-        <h2 className="text-inst-blue fw-bold mb-0">Editar Cliente</h2>
-      </div>
-
-      <Card className="shadow border-0">
-        <Card.Header className="bg-inst-gold text-white py-3">
-          <h6 className="mb-0 fw-bold d-flex align-items-center gap-2">
-            <Edit size={18} /> Modificar Información
-          </h6>
-        </Card.Header>
-        <Card.Body className="p-4">
-          
-          {error && <Alert variant="danger">{error}</Alert>}
-
+    <Modal show={show} onHide={onHide} size="lg" centered>
+      <Modal.Header closeButton className="bg-inst-blue text-white">
+        <Modal.Title>Editar Cliente - {client?.CodigoCliente}</Modal.Title>
+      </Modal.Header>
+      
+      <Modal.Body className="bg-light">
+        {loadingData ? (
+          <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="mt-2 text-muted">Cargando datos del cliente...</p>
+          </div>
+        ) : (
           <Form onSubmit={handleSubmit}>
             <Row className="g-3">
               <Col md={4}>
                 <Form.Group>
                   <Form.Label className="fw-bold text-secondary small">CÓDIGO</Form.Label>
-                  <Form.Control name="codigo" value={formData.codigo} onChange={handleChange} required  disabled/>
+                  <Form.Control name="codigo" value={formData.codigo} onChange={handleChange} disabled />
                 </Form.Group>
               </Col>
               <Col md={8}>
                 <Form.Group>
-                  <Form.Label className="fw-bold text-secondary small">NOMBRE O RAZÓN SOCIAL</Form.Label>
+                  <Form.Label className="fw-bold text-secondary small">NOMBRE O RAZÓN SOCIAL <span className="text-danger">*</span></Form.Label>
                   <Form.Control name="nombre" value={formData.nombre} onChange={handleChange} required />
                 </Form.Group>
               </Col>
@@ -183,7 +173,7 @@ const EditClient = () => {
               
               <Col md={12}>
                 <h6 className="text-inst-blue fw-bold mb-3 d-flex align-items-center gap-2">
-                    <MapPin size={18} /> Ubicación Actual
+                  <MapPin size={18} /> Ubicación
                 </h6>
               </Col>
 
@@ -191,8 +181,9 @@ const EditClient = () => {
                 <Form.Group>
                   <Form.Label className="small text-muted">Departamento</Form.Label>
                   <Form.Select value={selectedDept} onChange={handleDeptChange}>
+                    <option value="">-- Seleccionar --</option>
                     {departamentos.map(d => (
-                        <option key={d.DepartamentoID} value={d.DepartamentoID}>{d.Nombre}</option>
+                      <option key={d.DepartamentoID} value={d.DepartamentoID}>{d.Nombre}</option>
                     ))}
                   </Form.Select>
                 </Form.Group>
@@ -203,7 +194,7 @@ const EditClient = () => {
                   <Form.Select value={selectedMun} onChange={handleMunChange} disabled={!selectedDept}>
                     <option value="">-- Seleccionar --</option>
                     {municipios.map(m => (
-                        <option key={m.MunicipioID} value={m.MunicipioID}>{m.Nombre}</option>
+                      <option key={m.MunicipioID} value={m.MunicipioID}>{m.Nombre}</option>
                     ))}
                   </Form.Select>
                 </Form.Group>
@@ -216,11 +207,10 @@ const EditClient = () => {
                     value={formData.distritoId} 
                     onChange={handleChange}
                     disabled={!selectedMun}
-                    required
                   >
                     <option value="">-- Seleccionar --</option>
                     {distritos.map(d => (
-                        <option key={d.DistritoID} value={d.DistritoID}>{d.Nombre}</option>
+                      <option key={d.DistritoID} value={d.DistritoID}>{d.Nombre}</option>
                     ))}
                   </Form.Select>
                 </Form.Group>
@@ -238,18 +228,23 @@ const EditClient = () => {
                   />
                 </Form.Group>
               </Col>
-
-              <Col md={12} className="mt-4">
-                <Button type="submit" className="btn-institutional w-100 py-2" disabled={loadingSave}>
-                  {loadingSave ? 'Guardando...' : <><Save size={18} className="me-2" /> ACTUALIZAR CLIENTE</>}
-                </Button>
-              </Col>
             </Row>
           </Form>
-        </Card.Body>
-      </Card>
-    </Container>
+        )}
+      </Modal.Body>
+      
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>Cancelar</Button>
+        <Button 
+          className="btn-institutional" 
+          onClick={handleSubmit} 
+          disabled={loadingSave || loadingData}
+        >
+          {loadingSave ? 'Guardando...' : <><Save size={18} className="me-2" /> ACTUALIZAR</>}
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 };
 
-export default EditClient;
+export default EditClientModal;

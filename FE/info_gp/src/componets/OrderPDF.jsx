@@ -1,112 +1,103 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 const API_URL = "http://localhost:5000/api";
 
-const OrderPDF = ({ data }) => {
-  if (!data || !data.empresa) return <div className="p-5 text-center">Cargando datos...</div>;
+const OrderPDF = forwardRef(({ data }, ref) => {
+  if (!data) return null;
 
-  const { cliente, items, numeroCotizacion, fecha, empresa } = data;
+  const { 
+    NumeroCotizacion, NombreCliente, FechaAprobacion, FechaEntrega, 
+    ElaboradoPor, EjecutivoVenta, items, empresa 
+  } = data;
 
   return (
-    <div className="p-5 bg-white h-100" style={{ fontFamily: 'Arial, sans-serif', color: '#000', fontSize: '14px' }}>
+    <div ref={ref} className="p-5 bg-white text-dark" style={{ width: '100%', minHeight: '100%', fontSize: '12px', fontFamily: 'Arial, sans-serif' }}>
       
-      {/* ENCABEZADO */}
-      <div className="row mb-4 border-bottom pb-3">
-        <div className="col-8">
-            {/* Logo opcional en la orden */}
-            {empresa.EmpresaID && (
-                <img 
-                    src={`${API_URL}/companies/logo/${empresa.EmpresaID}`} 
-                    style={{ height: '50px', marginBottom: '10px' }} 
-                    onError={(e)=>e.target.style.display='none'}
-                    alt="Logo"
-                />
-            )}
-            <h2 className="fw-bold text-uppercase mb-1">ORDEN DE PEDIDO</h2>
-            <div className="text-secondary small">
-                <strong>Emisor:</strong> {empresa.Nombre}<br/>
-                <strong>Dirección:</strong> {empresa.Direccion}
+      {/* HEADER */}
+      <div className="d-flex justify-content-between align-items-start mb-4 border-bottom pb-3">
+        <div>
+            {/* Logo de la empresa (si existe ID de empresa en la orden o cotización) */}
+            {/* Nota: Asegúrate de pasar el ID de la empresa en 'data' si lo necesitas dinámico */}
+            <h2 className="fw-bold text-uppercase mb-0">ORDEN DE TRABAJO</h2>
+            <div className="small text-secondary mt-1">
+                <strong>{empresa?.Nombre || 'Don Bosco'}</strong><br/>
+                {empresa?.Direccion}
             </div>
         </div>
-        <div className="col-4 text-end">
-            <div className="border p-3 rounded bg-light">
-                <h5 className="fw-bold mb-1">#{numeroCotizacion}</h5>
-                <small className="d-block text-muted">Referencia</small>
-                <div className="mt-2 fw-bold">{new Date(fecha).toLocaleDateString()}</div>
+        <div className="text-end">
+            <div className="border rounded p-2 bg-light">
+                <h5 className="fw-bold m-0">#{NumeroCotizacion}</h5>
+                <small className="text-muted">Referencia</small>
+            </div>
+            <div className="mt-2 small">
+                <strong>Fecha Entrega:</strong> {new Date(FechaEntrega).toLocaleDateString()}
             </div>
         </div>
       </div>
 
-      {/* DATOS CLIENTE */}
-      <div className="row mb-5">
-        <div className="col-12"><h6 className="fw-bold bg-dark text-white p-2 ps-3 mb-3 rounded">INFORMACIÓN DE ENTREGA</h6></div>
+      {/* INFO GENERAL */}
+      <div className="row mb-4">
         <div className="col-6">
-            <p className="mb-1"><strong>Cliente:</strong> {cliente.NombreCliente}</p>
-            <p className="mb-1"><strong>Contacto:</strong> {cliente.AtencionA || 'N/A'}</p>
-            <p className="mb-1"><strong>Tel:</strong> {cliente.TelefonoCliente || 'N/A'}</p>
+            <h6 className="fw-bold bg-secondary text-white p-1 ps-2 rounded-top mb-0">CLIENTE</h6>
+            <div className="border rounded-bottom p-2">
+                <p className="mb-1 fs-6 fw-bold">{NombreCliente}</p>
+                <p className="mb-0 text-muted">Aprobado el: {new Date(FechaAprobacion).toLocaleDateString()}</p>
+            </div>
         </div>
         <div className="col-6">
-            <p className="mb-1"><strong>Dirección:</strong></p>
-            <p className="text-muted border p-2 rounded bg-light small">
-                {cliente.DireccionCalle || ''} 
-                {cliente.Municipio ? `, ${cliente.Municipio}` : ''} 
-                {cliente.Departamento ? `, ${cliente.Departamento}` : ''}
-                {!cliente.DireccionCalle && "No especificada"}
-            </p>
+            <h6 className="fw-bold bg-secondary text-white p-1 ps-2 rounded-top mb-0">RESPONSABLES</h6>
+            <div className="border rounded-bottom p-2">
+                <p className="mb-1"><strong>Ejecutivo Venta:</strong> {EjecutivoVenta}</p>
+                <p className="mb-0"><strong>Elaborado Por:</strong> {ElaboradoPor}</p>
+            </div>
         </div>
       </div>
 
-      {/* TABLA SIN PRECIOS */}
-      <table className="table table-bordered mb-4 align-middle">
-        <thead className="table-dark">
-          <tr>
-            <th className="text-center" style={{ width: '80px' }}>IMG</th>
-            <th className="text-center" style={{ width: '80px' }}>CANT.</th>
-            <th>CÓDIGO</th>
-            <th>DESCRIPCIÓN</th>
-            <th className="text-center" style={{ width: '80px' }}>CHECK</th>
-          </tr>
+      {/* TABLA DE PRODUCTOS (Resumen para Taller/Entrega) */}
+      <table className="table table-bordered mb-5">
+        <thead className="table-light">
+            <tr>
+                <th className="text-center" style={{width: '60px'}}>CANT</th>
+                <th>DESCRIPCIÓN DEL PRODUCTO</th>
+                <th className="text-center" style={{width: '100px'}}>VERIFICACIÓN</th>
+            </tr>
         </thead>
         <tbody>
-          {items.map((item, i) => (
-            <tr key={i}>
-              <td className="text-center py-2">
-                <img 
-                    src={`${API_URL}/products/image/${item.productoId}`} 
-                    style={{ width: '60px', height: '60px', objectFit: 'contain' }} 
-                    onError={(e)=>e.target.src='https://via.placeholder.com/60?text=IMG'} 
-                    alt="prod"
-                />
-              </td>
-              <td className="text-center fw-bold fs-4">{item.cantidad}</td>
-              <td className="fw-bold text-nowrap">{item.codigo}</td>
-              <td>
-                <span className="d-block fw-bold">{item.nombre}</span>
-                {item.descripcion && <span className="small text-muted">{item.descripcion}</span>}
-              </td>
-              <td className="text-center">
-                  <div style={{ width: '25px', height: '25px', border: '2px solid #ccc', margin: '0 auto', borderRadius: '4px' }}></div>
-              </td>
-            </tr>
-          ))}
+            {items?.map((item, i) => (
+                <tr key={i}>
+                    <td className="text-center fw-bold fs-5 align-middle">{item.Cantidad || item.cantidad}</td>
+                    <td className="align-middle">
+                        <span className="fw-bold d-block">{item.NombreProducto || item.nombre}</span>
+                        <span className="small text-muted">{item.CodigoProducto || item.codigo}</span>
+                    </td>
+                    <td className="text-center align-middle">
+                        <div style={{width: '20px', height: '20px', border: '2px solid #ccc', margin: '0 auto'}}></div>
+                    </td>
+                </tr>
+            ))}
         </tbody>
       </table>
 
-      {/* FIRMAS */}
-      <div className="row mt-5 pt-5 text-center" style={{ pageBreakInside: 'avoid' }}>
-        <div className="col-4">
-            <div className="border-top border-dark w-75 mx-auto pt-2">Despachado</div>
+      {/* FIRMAS (Al final de la hoja) */}
+      <div className="fixed-bottom position-absolute w-100 px-5" style={{ bottom: '50px' }}>
+        <div className="row text-center">
+            <div className="col-4">
+                <div className="border-top border-dark pt-2 mx-3">Autorizado</div>
+            </div>
+            <div className="col-4">
+                <div className="border-top border-dark pt-2 mx-3">Entrega / Despacho</div>
+            </div>
+            <div className="col-4">
+                <div className="border-top border-dark pt-2 mx-3">Recibido Conforme</div>
+            </div>
         </div>
-        <div className="col-4">
-            <div className="border-top border-dark w-75 mx-auto pt-2">Transporte</div>
-        </div>
-        <div className="col-4">
-            <div className="border-top border-dark w-75 mx-auto pt-2">Recibido</div>
+        <div className="text-center mt-4 text-muted fst-italic" style={{ fontSize: '10px' }}>
+            Este documento es un comprobante interno de orden de trabajo y entrega.
         </div>
       </div>
 
     </div>
   );
-};
+});
 
 export default OrderPDF;

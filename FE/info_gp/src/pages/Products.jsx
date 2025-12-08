@@ -3,7 +3,8 @@ import api from '../api/axios';
 import { Card, Table, Button, Container, Spinner, Badge, Form, InputGroup } from 'react-bootstrap';
 import { Plus, Package, Edit, Trash2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2'; // <--- SWEET ALERT
+import Swal from 'sweetalert2';
+import EditProductModal from '../componets/EditProductModal';
 
 const Products = () => {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const fetchProducts = async () => {
     try {
@@ -136,7 +139,14 @@ const Products = () => {
                     <td>{p.Nombre}</td>
                     <td><Badge bg="light" text="dark" className="border">{p.Categoria} / {p.Subcategoria}</Badge></td>
                     <td className="text-end pe-4">
-                        <Button variant="link" className="text-inst-blue p-0 me-3" onClick={() => navigate(`/productos/editar/${p.ProductoID}`)}>
+                        <Button 
+                            variant="link" 
+                            className="text-inst-blue p-0 me-3" 
+                            onClick={() => {
+                                setSelectedProduct(p);
+                                setShowEditModal(true);
+                            }}
+                        >
                             <Edit size={18} />
                         </Button>
                         <Button variant="link" className="text-danger p-0" onClick={() => handleDelete(p.ProductoID)}>
@@ -152,6 +162,15 @@ const Products = () => {
           )}
         </Card.Body>
       </Card>
+
+      <EditProductModal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        product={selectedProduct}
+        onSuccess={() => {
+          fetchProducts();
+        }}
+      />
     </Container>
   );
 };
