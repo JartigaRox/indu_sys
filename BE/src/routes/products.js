@@ -6,6 +6,8 @@ import {
     getProductImage, 
     getCategories, 
     getSubcategories,
+    getTiposMueble,
+    getEstadosProducto,
     getProduct,
     updateProduct,
     deleteProduct
@@ -20,6 +22,8 @@ const upload = multer({ storage: storage });
 router.get('/image/:id', getProductImage);
 router.get('/categories', verifyToken, getCategories);
 router.get('/subcategories/:catId', verifyToken, getSubcategories);
+router.get('/tipos-mueble', verifyToken, getTiposMueble);
+router.get('/estados-producto', verifyToken, getEstadosProducto);
 
 router.get('/', verifyToken, getProducts);
 router.get('/:id', verifyToken, getProduct);

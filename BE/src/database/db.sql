@@ -67,7 +67,6 @@ CREATE TABLE Productos (
 );
 ALTER TABLE Productos ALTER COLUMN Descripcion NVARCHAR(1000);
 GO
-
 -- =============================================
 -- MÓDULO 2: CLIENTES
 -- =============================================
@@ -829,3 +828,21 @@ SELECT * FROM Clientes;
 SELECT * FROM Empresas;
 
 SELECT * FROM Productos;
+
+CREATE TABLE TipoMuebles (
+    TipoMuebleID INT IDENTITY(1,1) PRIMARY KEY,
+    Tipo NVARCHAR(50) NOT NULL UNIQUE
+);
+INSERT INTO TipoMuebles (Tipo) VALUES 
+('DE LINEA'), ('ESPECIAL'), ('NORMAL'), ('DESCONTINUADO');
+CREATE TABLE EstadoProducto (
+    EstadoProductoID INT IDENTITY(1,1) PRIMARY KEY,
+    Estado NVARCHAR(50) NOT NULL UNIQUE
+);
+INSERT INTO EstadoProducto (Estado) VALUES 
+('REVISADO Y ACEPTADO'), ('PENDIENTE'), ('DESCONTINUADO');
+
+Alter TABLE Productos ADD TipoMuebleID INT;
+ALTER TABLE Productos ADD CONSTRAINT FK_Productos_TipoMuebles FOREIGN KEY (TipoMuebleID) REFERENCES TipoMuebles(TipoMuebleID);
+Alter TABLE Productos ADD EstadoProductoID INT;
+ALTER TABLE Productos ADD CONSTRAINT FK_Productos_EstadoProducto FOREIGN KEY (EstadoProductoID) REFERENCES EstadoProducto(EstadoProductoID);

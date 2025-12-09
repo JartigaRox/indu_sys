@@ -29,6 +29,28 @@ export const getSubcategories = async (req, res) => {
     }
 };
 
+// Obtener todos los tipos de mueble (Para combobox)
+export const getTiposMueble = async (req, res) => {
+    try {
+        const pool = await getConnection();
+        const result = await pool.request().query("SELECT * FROM TipoMuebles");
+        res.json(result.recordset);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Obtener todos los estados de producto (Para combobox)
+export const getEstadosProducto = async (req, res) => {
+    try {
+        const pool = await getConnection();
+        const result = await pool.request().query("SELECT * FROM EstadoProducto");
+        res.json(result.recordset);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // ---------------------------------------------------
 // 3. CONSULTAS Y UTILIDADES PÚBLICAS
 // ---------------------------------------------------
@@ -41,10 +63,13 @@ export const getProducts = async (req, res) => {
         const result = await pool.request().query(`
             SELECT 
                 p.ProductoID, p.CodigoProducto, p.Nombre, p.Descripcion,
-                s.Nombre as Subcategoria, c.Nombre as Categoria
+                s.Nombre as Subcategoria, c.Nombre as Categoria,
+                tm.Tipo as TipoMueble, ep.Estado as EstadoProducto
             FROM Productos p
             LEFT JOIN Subcategorias s ON p.SubcategoriaID = s.SubcategoriaID
             LEFT JOIN Categorias c ON s.CategoriaID = c.CategoriaID
+            LEFT JOIN TipoMuebles tm ON p.TipoMuebleID = tm.TipoMuebleID
+            LEFT JOIN EstadoProducto ep ON p.EstadoProductoID = ep.EstadoProductoID
         `);
         res.json(result.recordset);
     } catch (error) {
@@ -73,7 +98,7 @@ export const getProductImage = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-    const { nombre, descripcion, subcategoriaId } = req.body;
+    const { nombre, descripcion, subcategoriaId, tipoMuebleId, estadoProductoId } = req.body;
     const imagen = req.file ? req.file.buffer : null;
 
     if (!nombre || !subcategoriaId) return res.status(400).json({ message: "Datos incompletos" });
@@ -100,8 +125,10 @@ export const createProduct = async (req, res) => {
             .input("nombre", sql.NVarChar, nombre)
             .input("descripcion", sql.NVarChar, descripcion)
             .input("subId", sql.Int, subcategoriaId)
+            .input("tipoMuebleId", sql.Int, tipoMuebleId || null)
+            .input("estadoProductoId", sql.Int, estadoProductoId || null)
             .input("imagen", sql.VarBinary, imagen)
-            .query(`INSERT INTO Productos (CodigoProducto, Nombre, Descripcion, SubcategoriaID, Imagen) VALUES (@codigo, @nombre, @descripcion, @subId, @imagen)`);
+            .query(`INSERT INTO Productos (CodigoProducto, Nombre, Descripcion, SubcategoriaID, TipoMuebleID, EstadoProductoID, Imagen) VALUES (@codigo, @nombre, @descripcion, @subId, @tipoMuebleId, @estadoProductoId, @imagen)`);
 
         res.status(201).json({ message: "Producto creado", codigo: codigoFinal });
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -119,10 +146,14 @@ export const getProduct = async (req, res) => {
                     p.*, 
                     s.CategoriaID,
                     s.CodigoSubcategoria,
-                    c.CodigoCategoria
+                    c.CodigoCategoria,
+                    tm.Tipo as TipoMueble,
+                    ep.Estado as EstadoProducto
                 FROM Productos p
                 LEFT JOIN Subcategorias s ON p.SubcategoriaID = s.SubcategoriaID
                 LEFT JOIN Categorias c ON s.CategoriaID = c.CategoriaID
+                LEFT JOIN TipoMuebles tm ON p.TipoMuebleID = tm.TipoMuebleID
+                LEFT JOIN EstadoProducto ep ON p.EstadoProductoID = ep.EstadoProductoID
                 WHERE p.ProductoID = @id
             `);
         res.json(result.recordset[0]);
@@ -132,7 +163,7 @@ export const getProduct = async (req, res) => {
 // --- NUEVO: ACTUALIZAR PRODUCTO ---
 export const updateProduct = async (req, res) => {
     const { id } = req.params;
-    const { nombre, descripcion, subcategoriaId } = req.body;
+    const { nombre, descripcion, subcategoriaId, tipoMuebleId, estadoProductoId } = req.body;
     const imagen = req.file ? req.file.buffer : null; // Si viene imagen nueva
 
     try {
@@ -141,9 +172,11 @@ export const updateProduct = async (req, res) => {
             .input("id", sql.Int, id)
             .input("nombre", sql.NVarChar, nombre)
             .input("descripcion", sql.NVarChar, descripcion)
-            .input("subId", sql.Int, subcategoriaId);
+            .input("subId", sql.Int, subcategoriaId)
+            .input("tipoMuebleId", sql.Int, tipoMuebleId || null)
+            .input("estadoProductoId", sql.Int, estadoProductoId || null);
 
-        let query = "UPDATE Productos SET Nombre = @nombre, Descripcion = @descripcion, SubcategoriaID = @subId";
+        let query = "UPDATE Productos SET Nombre = @nombre, Descripcion = @descripcion, SubcategoriaID = @subId, TipoMuebleID = @tipoMuebleId, EstadoProductoID = @estadoProductoId";
         
         // Solo actualizamos imagen si el usuario subió una nueva
         if (imagen) {

@@ -133,6 +133,8 @@ const Products = () => {
                       <th>Imagen</th>
                       <th>Nombre</th>
                       <th>Categoría</th>
+                      <th>Tipo Mueble</th>
+                      <th>Estado</th>
                       <th className="text-end pe-4">Acciones</th>
                     </tr>
                   </thead>
@@ -149,6 +151,8 @@ const Products = () => {
                     </td>
                     <td>{p.Nombre}</td>
                     <td><Badge bg="light" text="dark" className="border">{p.Categoria} / {p.Subcategoria}</Badge></td>
+                    <td><Badge bg="info" text="dark">{p.TipoMueble || 'N/A'}</Badge></td>
+                    <td><Badge bg="success">{p.EstadoProducto || 'N/A'}</Badge></td>
                     <td className="text-end pe-4">
                         <Button 
                             variant="link" 

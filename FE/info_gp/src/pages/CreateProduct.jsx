@@ -17,14 +17,27 @@ const CreateProduct = () => {
   const [selectedCat, setSelectedCat] = useState('');
   const [selectedSub, setSelectedSub] = useState('');
 
+  const [tiposMueble, setTiposMueble] = useState([]);
+  const [estadosProducto, setEstadosProducto] = useState([]);
+  const [selectedTipoMueble, setSelectedTipoMueble] = useState('');
+  const [selectedEstado, setSelectedEstado] = useState('');
+
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Cargar Categorías
+  // Cargar Categorías, Tipos de Mueble y Estados
   useEffect(() => {
     api.get('/products/categories')
         .then(res => setCategorias(res.data))
+        .catch(err => console.error(err));
+    
+    api.get('/products/tipos-mueble')
+        .then(res => setTiposMueble(res.data))
+        .catch(err => console.error(err));
+    
+    api.get('/products/estados-producto')
+        .then(res => setEstadosProducto(res.data))
         .catch(err => console.error(err));
   }, []);
 
@@ -63,6 +76,8 @@ const CreateProduct = () => {
     formData.append('nombre', nombre);
     formData.append('descripcion', descripcion);
     formData.append('subcategoriaId', selectedSub);
+    if (selectedTipoMueble) formData.append('tipoMuebleId', selectedTipoMueble);
+    if (selectedEstado) formData.append('estadoProductoId', selectedEstado);
     if (file) formData.append('imagen', file);
 
     try {
@@ -134,6 +149,31 @@ const CreateProduct = () => {
                         <Form.Text className="text-muted small">
                             * El código se generará automáticamente (CAT-SUB-0001).
                         </Form.Text>
+                    </Col>
+                </Row>
+
+                <Row className="mb-3">
+                    <Col md={6}>
+                        <Form.Group>
+                            <Form.Label className="fw-bold text-secondary small">Tipo de Mueble</Form.Label>
+                            <Form.Select value={selectedTipoMueble} onChange={(e) => setSelectedTipoMueble(e.target.value)}>
+                                <option value="">Seleccionar...</option>
+                                {tiposMueble.map(t => (
+                                    <option key={t.TipoMuebleID} value={t.TipoMuebleID}>{t.Tipo}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                        <Form.Group>
+                            <Form.Label className="fw-bold text-secondary small">Estado</Form.Label>
+                            <Form.Select value={selectedEstado} onChange={(e) => setSelectedEstado(e.target.value)}>
+                                <option value="">Seleccionar...</option>
+                                {estadosProducto.map(e => (
+                                    <option key={e.EstadoProductoID} value={e.EstadoProductoID}>{e.Estado}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
                     </Col>
                 </Row>
 

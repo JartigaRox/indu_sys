@@ -64,6 +64,8 @@ const ImportProductsModal = ({ show, onHide, onSuccess }) => {
               descripcion: row.Descripcion?.trim() || '',
               categoriaId: parseInt(row.CategoriaID),
               subcategoriaId: parseInt(row.SubcategoriaID),
+              tipoMuebleId: row.TipoMuebleID ? parseInt(row.TipoMuebleID) : null,
+              estadoProductoId: row.EstadoProductoID ? parseInt(row.EstadoProductoID) : null,
               status: 'pending'
             });
           }
@@ -133,7 +135,7 @@ const ImportProductsModal = ({ show, onHide, onSuccess }) => {
   const downloadTemplate = () => {
     // Crear plantilla de ejemplo
     const template = [
-      { Nombre: 'Producto Ejemplo', Descripcion: 'Descripción del producto', CategoriaID: 1, SubcategoriaID: 1 }
+      { Nombre: 'Producto Ejemplo', Descripcion: 'Descripción del producto', CategoriaID: 1, SubcategoriaID: 1, TipoMuebleID: 1, EstadoProductoID: 1 }
     ];
     const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
@@ -159,6 +161,8 @@ const ImportProductsModal = ({ show, onHide, onSuccess }) => {
             <li><strong>Descripcion</strong>: Descripción del producto (Opcional)</li>
             <li><strong>CategoriaID</strong>: ID de la categoría (Requerido, número)</li>
             <li><strong>SubcategoriaID</strong>: ID de la subcategoría (Requerido, número)</li>
+            <li><strong>TipoMuebleID</strong>: ID del tipo de mueble (Opcional, número)</li>
+            <li><strong>EstadoProductoID</strong>: ID del estado (Opcional, número)</li>
           </ul>
           <Button 
             variant="outline-primary" 
@@ -204,8 +208,10 @@ const ImportProductsModal = ({ show, onHide, onSuccess }) => {
                   <tr>
                     <th>#</th>
                     <th>Nombre</th>
-                    <th>Categoría ID</th>
-                    <th>Subcategoría ID</th>
+                    <th>Cat ID</th>
+                    <th>Sub ID</th>
+                    <th>Tipo ID</th>
+                    <th>Estado ID</th>
                     <th>Estado</th>
                   </tr>
                 </thead>
@@ -216,6 +222,8 @@ const ImportProductsModal = ({ show, onHide, onSuccess }) => {
                       <td>{item.nombre}</td>
                       <td>{item.categoriaId}</td>
                       <td>{item.subcategoriaId}</td>
+                      <td>{item.tipoMuebleId || '-'}</td>
+                      <td>{item.estadoProductoId || '-'}</td>
                       <td>
                         {item.status === 'pending' && <Badge bg="secondary">Pendiente</Badge>}
                         {item.status === 'success' && <Badge bg="success"><CheckCircle size={14} /> Importado</Badge>}

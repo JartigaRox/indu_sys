@@ -14,6 +14,11 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
   const [selectedCat, setSelectedCat] = useState('');
   const [selectedSub, setSelectedSub] = useState('');
 
+  const [tiposMueble, setTiposMueble] = useState([]);
+  const [estadosProducto, setEstadosProducto] = useState([]);
+  const [selectedTipoMueble, setSelectedTipoMueble] = useState('');
+  const [selectedEstado, setSelectedEstado] = useState('');
+
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
@@ -25,9 +30,15 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
       const loadProductData = async () => {
         setLoadingData(true);
         try {
-          // 1. Cargar Categorías
-          const resCats = await api.get('/products/categories');
+          // 1. Cargar Categorías, Tipos de Mueble y Estados
+          const [resCats, resTipos, resEstados] = await Promise.all([
+            api.get('/products/categories'),
+            api.get('/products/tipos-mueble'),
+            api.get('/products/estados-producto')
+          ]);
           setCategorias(resCats.data);
+          setTiposMueble(resTipos.data);
+          setEstadosProducto(resEstados.data);
 
           // 2. Cargar Producto completo
           const resProd = await api.get(`/products/${product.ProductoID}`);
@@ -36,6 +47,8 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
           setCodigo(p.CodigoProducto);
           setNombre(p.Nombre);
           setDescripcion(p.Descripcion || '');
+          setSelectedTipoMueble(p.TipoMuebleID || '');
+          setSelectedEstado(p.EstadoProductoID || '');
           setPreview(`http://localhost:5000/api/products/image/${product.ProductoID}`);
 
           // 3. Cargar Subcategorías y seleccionar
@@ -90,6 +103,8 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
     formData.append('nombre', nombre);
     formData.append('descripcion', descripcion);
     formData.append('subcategoriaId', selectedSub);
+    if (selectedTipoMueble) formData.append('tipoMuebleId', selectedTipoMueble);
+    if (selectedEstado) formData.append('estadoProductoId', selectedEstado);
     if (file) formData.append('imagen', file);
 
     try {
@@ -161,6 +176,31 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
                 <Form.Text className="text-muted small">
                   * Nota: Cambiar la categoría modificará la clasificación interna pero NO el código visual.
                 </Form.Text>
+              </Col>
+            </Row>
+
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label className="fw-bold text-secondary small">Tipo de Mueble</Form.Label>
+                  <Form.Select value={selectedTipoMueble} onChange={(e) => setSelectedTipoMueble(e.target.value)}>
+                    <option value="">Seleccionar...</option>
+                    {tiposMueble.map(t => (
+                      <option key={t.TipoMuebleID} value={t.TipoMuebleID}>{t.Tipo}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label className="fw-bold text-secondary small">Estado</Form.Label>
+                  <Form.Select value={selectedEstado} onChange={(e) => setSelectedEstado(e.target.value)}>
+                    <option value="">Seleccionar...</option>
+                    {estadosProducto.map(e => (
+                      <option key={e.EstadoProductoID} value={e.EstadoProductoID}>{e.Estado}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
               </Col>
             </Row>
 
