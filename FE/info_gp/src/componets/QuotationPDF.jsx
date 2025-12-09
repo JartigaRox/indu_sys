@@ -97,47 +97,91 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                 </div>
 
                 {/* Tabla Items */}
-                <table className="table table-striped w-100 mb-4" style={{ borderColor: mainColor }}>
-                  <thead style={{ backgroundColor: mainColor, color: 'white' }}>
-                    <tr>
-                      <th className="py-1 ps-2 text-start">Cant.</th>
-                      <th className="py-1 ps-2 text-start">Código.</th>
-                      <th className="py-1 text-start">Nombre ítem</th>
-                      <th className="py-1 text-start">Imagen</th> 
-                      <th className="py-1 text-start">Descripcion</th>  
-                      <th className="py-1 text-start">Precio unitario</th>
-                      <th className="py-1 text-start">Precio total</th>                   
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item, i) => (
-                      <tr key={i} style={{ pageBreakInside: 'avoid' }}>
-                        <td className="text-start ps-2 fw-bold">{item.cantidad}</td>
-                        <td className="text-start">{item.codigo || 'N/A'}</td>
-                        <td className="text-start">{item.nombre || 'N/A'}</td>
-                        <td className="text-center py-3">
-                {item.imagenURL ? (
-                  <img 
-                    src={item.imagenURL} 
-                    alt="x" 
-                    style={{ 
-                        width: '200px', 
-                        height: '200px', 
-                        objectFit: 'contain',
-                        borderRadius: '4px',
-                        backgroundColor: 'white',
-                        border: '1px solid #dee2e6'
-                    }}
-                  />
-                ) : 'N/A'}
-              </td>
-                         <td className="text-start ps-2">{item.descripcion || 'N/A'}</td>
-                         <td className="text-start ps-2 fw-bold">${item.precio.toFixed(2)}</td>
-                          <td className="text-start ps-2 fw-bold">${(item.cantidad * item.precio).toFixed(2)}</td>
+                {items.map((item, i) => (
+                  <table key={i} className="w-100 mb-4" style={{ border: '2px solid black', borderCollapse: 'collapse', pageBreakInside: 'avoid' }}>
+                    <tbody>
+                      {/* Fila 1: Headers con CAN, CÓDIGO, NOMBRE ITEM (sin header de imagen) */}
+                      <tr>
+                        <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '8%', padding: '8px', fontSize: '11px' }}>
+                          CAN
+                        </td>
+                        <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '15%', padding: '8px', fontSize: '11px' }}>
+                          CÓDIGO
+                        </td>
+                        <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '37%', padding: '8px', fontSize: '11px' }}>
+                          NOMBRE ÍTEM
+                        </td>
+                        <td rowSpan="3" className="text-center align-middle" style={{ border: '1px solid black', width: '40%', padding: '8px' }}>
+                          {item.imagenURL ? (
+                            <img 
+                              src={item.imagenURL} 
+                              alt={item.nombre} 
+                              style={{ 
+                                width: '100%',
+                                maxWidth: '200px',
+                                height: 'auto',
+                                maxHeight: '200px',
+                                objectFit: 'contain'
+                              }}
+                            />
+                          ) : (
+                            <div className="text-muted" style={{ fontSize: '11px' }}>N/A</div>
+                          )}
+                        </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      
+                      {/* Fila 2: Valores de CAN, CÓDIGO, NOMBRE */}
+                      <tr>
+                        <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
+                          {item.cantidad}
+                        </td>
+                        <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
+                          {item.codigo || 'N/A'}
+                        </td>
+                        <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
+                          {item.nombre || 'N/A'}
+                        </td>
+                      </tr>
+                      
+                      {/* Fila 3: Descripciones (bullets) */}
+                      <tr>
+                        <td colSpan="3" className="align-top" style={{ border: '1px solid black', padding: '12px' }}>
+                          {item.descripcion ? (
+                            <ul className="mb-0 ps-3" style={{ fontSize: '10px', lineHeight: '1.4' }}>
+                              {item.descripcion.split('\n').filter(line => line.trim()).map((line, idx) => (
+                                <li key={idx}>{line.trim().toUpperCase()}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <ul className="mb-0 ps-3" style={{ fontSize: '10px' }}>
+                              <li>DESCRIPCIÓN</li>
+                              <li>DESCRIPCIÓN</li>
+                              <li>DESCRIPCIÓN</li>
+                              <li>DESCRIPCIÓN</li>
+                              <li>DESCRIPCIÓN</li>
+                            </ul>
+                          )}
+                        </td>
+                      </tr>
+                      
+                      {/* Fila 4: PRECIO UNITARIO y PRECIO TOTAL */}
+                      <tr>
+                        <td colSpan="2" className="fw-bold text-start ps-3 align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
+                          PRECIO UNITARIO
+                        </td>
+                        <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
+                          ${item.precio.toFixed(2)}
+                        </td>
+                        <td className="align-middle" style={{ border: '1px solid black', padding: '8px' }}>
+                          <div className="d-flex justify-content-between align-items-center px-2">
+                            <span className="fw-bold" style={{ fontSize: '11px' }}>PRECIO TOTAL</span>
+                            <span className="fw-bold" style={{ fontSize: '12px' }}>${(item.cantidad * item.precio).toFixed(2)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                ))}
 
                 {/* --- SECCIÓN DE TOTALES Y DISCLAIMERS (AL FINAL) --- */}
                 {/* La clase 'avoid-break' intenta mantener este bloque unido */}
