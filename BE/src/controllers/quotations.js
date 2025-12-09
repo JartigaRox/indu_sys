@@ -205,7 +205,8 @@ export const getQuoteById = async (req, res) => {
                     -- DATOS EMPRESA (Para el PDF)
                     e.Nombre as EmpresaNombre, 
                     e.Direccion as EmpresaDireccion,
-                    e.NRC,                          -- <--- Asegurado NRC
+                    e.NRC,
+                    e.NIT,
                     e.Telefono as TelefonoEmpresa,
                     e.CorreoElectronico as EmailEmpresa,
                     e.PaginaWeb as WebEmpresa

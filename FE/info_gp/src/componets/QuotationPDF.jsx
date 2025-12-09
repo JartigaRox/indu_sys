@@ -42,11 +42,13 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   );
 
   const FooterStyleA = () => (
-    <div className="pt-2 border-top w-100" style={{ borderColor: '#005689', borderWidth: '3px', borderStyle: 'solid' }}>
+    <div className="pt-2 border-top w-100" style={{ borderColor: '#005689', borderWidth: '3px' }}>
       <div className="d-flex flex-wrap justify-content-center gap-3 text-dark" style={{ fontSize: '10px' }}>
          <div className="d-flex align-items-center"><FaMapMarkerAlt className="me-1"/> {empresa.Direccion}</div>
          <div className="d-flex align-items-center"><FaPhoneAlt className="me-1"/> {empresa.Telefono}</div>
+         <div className="d-flex align-items-center"><FaWhatsapp className="me-1"/> {empresa.Celular}</div>
          <div className="d-flex align-items-center"><FaEnvelope className="me-1"/> <span style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span></div>
+         <div className="d-flex align-items-center"><FaGlobe className="me-1"/> <span style={{textTransform:'lowercase'}}> {empresa.PaginaWeb}</span></div>
       </div>
     </div>
   );
@@ -80,11 +82,16 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                 <div className="row mb-4 avoid-break">
                   <div className="col-12"><h6 className="fw-bold border-bottom pb-1" style={{ color: mainColor, borderColor: mainColor }}>CLIENTE</h6></div>
                   <div className="col-8">
+                    <p className="mb-0 text-muted small">Lourdes colón, {new Date(fecha).toLocaleDateString()}</p>
                     <p className="fw-bold mb-0 fs-6">{cliente?.NombreCliente}</p>
                     <p className="mb-0 text-muted small">{cliente?.DireccionCalle}</p>
+                    <p></p>
+                    <p className="mb-0 text-muted small">PRESENTE</p>
+                    <p></p>
+                    <p className="mb-0 text-muted small">NOS COMPLACE ENNVIARLE LA SIGUIENTE COTIZACIÓN PARA LOS SUMINISTROS DE:</p>
                   </div>
                   <div className="col-4 text-end">
-                    <p className="mb-0"><strong>Atención:</strong> {cliente?.AtencionA || 'N/A'}</p>
+                    <p className="mb-0"><strong>Atención A:</strong> {cliente?.AtencionA || 'N/A'}</p>
                     <p className="mb-0"><strong>Vendedor:</strong> {user?.username}</p>
                   </div>
                 </div>
@@ -132,10 +139,16 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                             <div className="col-8">
                                 <h6 className="fw-bold mb-2 text-dark">TÉRMINOS Y CONDICIONES:</h6>
                                 <ul className="ps-3 mb-0" style={{ listStyleType: 'circle' }}>
-                                    <li className="mb-1">Esta cotización es válida por <strong>15 días</strong> a partir de la fecha de emisión.</li>
-                                    <li className="mb-1">Tiempo de entrega estimado: <strong>{fechaEntrega ? new Date(fechaEntrega).toLocaleDateString() : 'A convenir'}</strong>.</li>
-                                    <li className="mb-1">Forma de pago: 50% anticipo, 50% contra entrega (o según acuerdo).</li>
-                                    <li>Precios incluyen IVA. Sujeto a disponibilidad de inventario.</li>
+                                    <li className="mb-1"><strong>NOTA:</strong> EN CASO DE DETECTARSE ERRORES ARITMÉTICOS EN LOS CÁLCULOS, LA COTIZACIÓN SERÁ CORREGIDA Y ACTUALIZADA DE INMEDIATO, NOTIFICANDO AL CLIENTE. LOS VALORES CORRECTOS PREVALECERÁN SOBRE CUALQUIER ERROR TIPOGRÁFICO O DE CÁLCULO. LA ACEPTACIÓN DE ESTA COTIZACIÓN IMPLICA EL RECONOCIMIENTO DE ESTA CONDICIÓN. LAS IMÁGENES SON DE FIN ILUSTRATIVO, SUJETAS A CAMBIOS.</li>
+                                    <li className="mb-1"><strong>GARANTÍA:</strong> 1 AÑO POR DESPERFECTO DE FABRICACIÓN VALIDEZ DE LA OFERTA: <strong>7 DÍAS CALENDARIO</strong> PRECIO INCLUYE IVA Y TRANSPORTE</li>
+                                    <li className="mb-1"><strong>CONDICIÓN DE PAGO: CHEQUE O AL CONTADO</strong></li>
+                                    <li>CHEQUE A NOMBRE DE: JEREMÍAS DE JESÚS ARTIGA DE PAZ</li>
+                                    <li>RAZÓN SOCIAL: JEREMÍAS DE JESÚS ARTIGA DE PAZ</li>
+                                    <li className="mb-1"><strong>CONTACTO DE LA EMPRESA:</strong></li>
+                                    <li>DIRECCIÓN: CARRETERA A SONSONATE, KM. 24, EDIFICIO GP DON BOSCO, DISTRITO DE COLON, MUNICIPIO DE LA LIBERTAD OESTE</li>
+                                    <li>TELÉFONO:{empresa.Telefono} </li>
+                                    <li>NIT: {empresa.NIT}</li>
+                                    <li>Registro: {empresa.NRC}</li>
                                 </ul>
                             </div>
                             
@@ -143,7 +156,9 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                             <div className="col-4 text-center d-flex flex-column justify-content-end align-items-center" style={{ height: '120px' }}>
                                 <div style={{ borderBottom: '1px solid #999', width: '80%', marginBottom: '5px' }}></div>
                                 <span className="fw-bold text-uppercase small">Firma y Sello Autorizado</span>
-                                <span className="small text-muted">{empresa.Nombre}</span>
+                                <span className="small text-muted">{user.username}</span>
+                                <span className="small text-muted">{empresa.Celular}</span>
+                                <span className="small text-muted" style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span>
                             </div>
                         </div>
                     </div>
@@ -172,7 +187,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
       <div className="print-footer-fixed d-flex align-items-end justify-content-center pb-3">
          {empresa.EmpresaID === 1 ? <FooterStyleA /> : (
            <div className="text-center small text-muted border-top pt-2 w-100">
-              {empresa.Nombre} | {empresa.Telefono}
+              {empresa.Nombre} | {empresa.Telefono} 
            </div>
          )}
       </div>

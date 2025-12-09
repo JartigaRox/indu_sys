@@ -615,6 +615,12 @@ CREATE TABLE Empresas (
     PaginaWeb NVARCHAR(150)
 );
 GO
+ALTER TABLE Empresas ADD  Celular NVARCHAR(20);
+ALTER TABLE Empresas ADD NIT NVARCHAR(50);
+
+UPDATE Empresas SET Celular = '6445-5204' WHERE EmpresaID = 1;
+UPDATE Empresas SET NIT = '0614-240216-104-4' WHERE EmpresaID = 1;
+
 -- Insertamos las 2 empresas por defecto
 INSERT INTO Empresas (Nombre, Direccion, NRC,Telefono,CorreoElectronico,PaginaWeb) VALUES ('Empresa A S.A. de C.V.', 'San Salvador','1234-5','1111-1111','empresa1@prueba.com','www.gp.com');
 INSERT INTO Empresas (Nombre, Direccion, NRC,Telefono,CorreoElectronico,PaginaWeb) VALUES ('Empresa B Solutions', 'Santa Tecla','1234-6','2222-2222','empresa2@prueba.com','www.gp.com');
@@ -818,3 +824,5 @@ END
 GO
 
 SELECT * FROM Clientes;
+
+SELECT * FROM Empresas;

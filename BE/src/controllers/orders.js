@@ -84,7 +84,8 @@ export const getOrderById = async (req, res) => {
                     -- Datos de Empresa
                     e.Nombre as EmpresaNombre, 
                     e.Direccion as EmpresaDireccion, 
-                    e.NRC,  -- <--- IMPORTANTE: Asegúrate que en tu BD se llame 'NRC'
+                    e.NRC,
+                    e.NIT,
                     e.Telefono as EmpresaTelefono,
                     e.CorreoElectronico as EmpresaEmail,
                     e.PaginaWeb as EmpresaWeb
