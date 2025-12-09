@@ -12,7 +12,7 @@ import CreateQuotation from './pages/CreateQuotation';
 import Products from './pages/Products';
 import CreateProduct from './pages/CreateProduct';
 import Orders from './pages/Orders';
-import RegisterUser from './pages/RegisterUser';
+import Users from './pages/Users';
 
 // Protección de Rutas
 const ProtectedRoute = ({ children }) => {
@@ -50,7 +50,7 @@ function App() {
 
             {/* Ordenes y Usuarios */}
             <Route path="/ordenes" element={<Orders />} />
-            <Route path="/usuarios/registro" element={<RegisterUser />} />
+            <Route path="/usuarios" element={<Users />} />
 
           </Route>
         </Routes>

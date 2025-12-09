@@ -126,3 +126,144 @@ export const refreshToken = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// --- GESTIÓN DE USUARIOS ---
+
+// Obtener todos los usuarios
+export const getUsers = async (req, res) => {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request().query(`
+      SELECT 
+        u.UsuarioID, 
+        u.Username, 
+        u.CorreoElectronico,
+        u.RolID,
+        r.NombreRol,
+        u.TipoVendedorID,
+        tv.Nombre as TipoVendedor
+      FROM Usuarios u
+      INNER JOIN Roles r ON u.RolID = r.RolID
+      LEFT JOIN TiposVendedor tv ON u.TipoVendedorID = tv.TipoVendedorID
+      ORDER BY u.UsuarioID DESC
+    `);
+    res.json(result.recordset);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Obtener un usuario por ID
+export const getUserById = async (req, res) => {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input("id", sql.Int, req.params.id)
+      .query(`
+        SELECT 
+          u.UsuarioID, 
+          u.Username, 
+          u.CorreoElectronico,
+          u.RolID,
+          u.TipoVendedorID
+        FROM Usuarios u
+        WHERE u.UsuarioID = @id
+      `);
+    
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    
+    res.json(result.recordset[0]);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Actualizar usuario
+export const updateUser = async (req, res) => {
+  const { username, email, rolId, tipoVendedorId, password } = req.body;
+  
+  try {
+    const pool = await getConnection();
+    
+    // Si se proporciona nueva contraseña, encriptarla
+    let updateQuery = `
+      UPDATE Usuarios 
+      SET Username = @username, 
+          CorreoElectronico = @email, 
+          RolID = @rolId, 
+          TipoVendedorID = @tipoVendedorId
+    `;
+    
+    const request = pool.request()
+      .input("id", sql.Int, req.params.id)
+      .input("username", sql.NVarChar, username)
+      .input("email", sql.NVarChar, email)
+      .input("rolId", sql.Int, rolId)
+      .input("tipoVendedorId", sql.Int, tipoVendedorId || null);
+    
+    if (password && password.trim() !== '') {
+      const salt = await bcrypt.genSalt(10);
+      const hash = await bcrypt.hash(password, salt);
+      request.input("passwordHash", sql.NVarChar, hash);
+      updateQuery += `, PasswordHash = @passwordHash`;
+    }
+    
+    updateQuery += ` WHERE UsuarioID = @id`;
+    
+    await request.query(updateQuery);
+    
+    res.json({ message: "Usuario actualizado exitosamente" });
+  } catch (error) {
+    if (error.number === 2627) {
+      return res.status(400).json({ message: "El nombre de usuario o correo ya existe" });
+    }
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Eliminar usuario
+export const deleteUser = async (req, res) => {
+  try {
+    const pool = await getConnection();
+    
+    // Verificar si el usuario existe
+    const checkUser = await pool.request()
+      .input("id", sql.Int, req.params.id)
+      .query("SELECT UsuarioID FROM Usuarios WHERE UsuarioID = @id");
+    
+    if (checkUser.recordset.length === 0) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    
+    // Intentar eliminar
+    try {
+      await pool.request()
+        .input("id", sql.Int, req.params.id)
+        .query("DELETE FROM Usuarios WHERE UsuarioID = @id");
+      
+      res.json({ message: "Usuario eliminado exitosamente" });
+    } catch (deleteError) {
+      if (deleteError.number === 547) {
+        return res.status(400).json({ 
+          message: "No se puede eliminar el usuario porque tiene cotizaciones u órdenes asociadas" 
+        });
+      }
+      throw deleteError;
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Obtener roles
+export const getRoles = async (req, res) => {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request().query('SELECT * FROM Roles');
+    res.json(result.recordset);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

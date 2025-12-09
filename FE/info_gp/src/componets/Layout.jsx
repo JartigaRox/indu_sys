@@ -70,13 +70,13 @@ const Layout = () => {
 
                     {isAdmin && (
                         <>
-                            <div className="text-white-50 small text-uppercase mt-3 mb-1 px-3">Registrar Usuarios</div>
+                            <div className="text-white-50 small text-uppercase mt-3 mb-1 px-3">Gestión de Usuarios</div>
                             <li>
                                 <button
-                                    onClick={() => { navigate('/usuarios/registro'); setShowMobileMenu(false); }}
+                                    onClick={() => { navigate('/usuarios'); setShowMobileMenu(false); }}
                                     className="btn text-white w-100 text-start d-flex align-items-center gap-2 hover-gold"
                                 >
-                                    <Users size={20} /> Registro
+                                    <Users size={20} /> Usuarios
                                 </button>
                             </li>
                         </>
