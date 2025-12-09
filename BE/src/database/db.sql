@@ -826,3 +826,5 @@ GO
 SELECT * FROM Clientes;
 
 SELECT * FROM Empresas;
+
+SELECT * FROM Productos;

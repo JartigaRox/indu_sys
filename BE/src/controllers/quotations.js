@@ -208,6 +208,7 @@ export const getQuoteById = async (req, res) => {
                     e.NRC,
                     e.NIT,
                     e.Telefono as TelefonoEmpresa,
+                    e.Celular as CelularEmpresa,
                     e.CorreoElectronico as EmailEmpresa,
                     e.PaginaWeb as WebEmpresa
                 FROM Cotizaciones c
@@ -225,9 +226,11 @@ export const getQuoteById = async (req, res) => {
             .query(`
                 SELECT 
                     d.*, 
+                    p.ProductoID,
                     p.Nombre as NombreProducto, 
                     p.CodigoProducto,
-                    p.Descripcion
+                    p.Descripcion,
+                    CASE WHEN p.Imagen IS NOT NULL THEN 'http://localhost:5000/api/products/image/' + CAST(p.ProductoID AS NVARCHAR) ELSE NULL END as ImagenURL
                 FROM DetalleCotizaciones d
                 INNER JOIN Productos p ON d.ProductoID = p.ProductoID
                 WHERE d.CotizacionID = @id

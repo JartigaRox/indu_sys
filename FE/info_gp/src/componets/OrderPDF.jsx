@@ -69,6 +69,7 @@ const OrderPDF = forwardRef(({ data }, ref) => {
                     <td className="align-middle">
                         <span className="fw-bold d-block">{item.NombreProducto || item.nombre}</span>
                         <span className="small text-muted">{item.CodigoProducto || item.codigo}</span>
+                        <p className="mt-2">{item.Descripcion || item.descripcion}</p>
                     </td>
                     <td className="text-center align-middle">
                         <div style={{width: '20px', height: '20px', border: '2px solid #ccc', margin: '0 auto'}}></div>

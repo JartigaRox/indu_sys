@@ -97,6 +97,8 @@ const CreateQuotation = () => {
                 productoId: i.ProductoID,
                 codigo: i.CodigoProducto,
                 nombre: i.NombreProducto,
+                descripcion: i.Descripcion,
+                imagenURL: i.ImagenURL,
                 cantidad: i.Cantidad,
                 precio: i.PrecioUnitario
             })));
@@ -116,6 +118,8 @@ const CreateQuotation = () => {
       productoId: currentProduct.value,
       codigo: currentProduct.data.CodigoProducto,
       nombre: currentProduct.data.Nombre,
+      descripcion: currentProduct.data.Descripcion,
+      imagenURL: `http://localhost:5000/api/products/image/${currentProduct.value}`,
       cantidad: parseInt(quantity),
       precio: parseFloat(price)
     };

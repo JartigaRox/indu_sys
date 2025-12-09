@@ -107,7 +107,8 @@ export const getOrderById = async (req, res) => {
                     p.Nombre as NombreProducto, 
                     p.CodigoProducto,
                     p.Descripcion,
-                    p.ProductoID -- Necesario para la imagen
+                    CASE WHEN p.Imagen IS NOT NULL THEN 'http://localhost:5000/api/products/image/' + CAST(p.ProductoID AS NVARCHAR) ELSE NULL END as ImagenURL,
+                    p.ProductoID
                 FROM DetalleCotizaciones d
                 INNER JOIN Productos p ON d.ProductoID = p.ProductoID
                 WHERE d.CotizacionID = @id

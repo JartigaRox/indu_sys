@@ -24,18 +24,22 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
       api.get(`/quotations/${quoteId}`)
         .then(res => {
             const data = res.data;
+            console.log('📦 Datos del backend:', data);
+            console.log('📦 Items:', data.items);
             const formattedData = {
                 cliente: {
                     NombreCliente: data.NombreCliente,
-                    DireccionCalle: data.DireccionCalle || '',
+                    DireccionCalle: data.DireccionSnapshot || '',
                     Municipio: data.Municipio || '',
-                    AtencionA: data.AtencionA || '',
-                    Telefono: data.TelefonoCliente || ''
+                    AtencionA: data.AtencionASnapshot || '',
+                    Telefono: data.TelefonoSnapshot || ''
                 },
                 items: data.items.map(i => ({
                     cantidad: i.Cantidad,
                     nombre: i.NombreProducto,
                     codigo: i.CodigoProducto,
+                    descripcion: i.Descripcion,
+                    imagenURL: i.ImagenURL,
                     precio: i.PrecioUnitario,
                     productoId: i.ProductoID
                 })),
@@ -50,9 +54,10 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
                     EmpresaID: data.EmpresaID,
                     Nombre: data.EmpresaNombre,
                     Direccion: data.EmpresaDireccion,
-                    Telefono: data.EmpresaTelefono,
-                    CorreoElectronico: data.EmpresaEmail,
-                    PaginaWeb: data.EmpresaWeb
+                    Telefono: data.TelefonoEmpresa,
+                    Celular: data.CelularEmpresa,
+                    CorreoElectronico: data.EmailEmpresa,
+                    PaginaWeb: data.WebEmpresa
                 }
             };
             setQuoteData(formattedData);

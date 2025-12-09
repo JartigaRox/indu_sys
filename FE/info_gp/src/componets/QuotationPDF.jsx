@@ -6,7 +6,7 @@ const API_URL = "http://localhost:5000/api";
 const QuotationPDF = forwardRef(({ data }, ref) => {
   if (!data || !data.empresa) return null;
 
-  const { cliente, items, user, numeroCotizacion, fecha, fechaEntrega, empresa } = data;
+  const { cliente, items, user, numeroCotizacion, fecha, empresa } = data;
   const total = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
   const mainColor = empresa.EmpresaID === 1 ? '#005689' : '#D4AF37';
 
@@ -101,21 +101,39 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                   <thead style={{ backgroundColor: mainColor, color: 'white' }}>
                     <tr>
                       <th className="py-1 ps-2 text-start">Cant.</th>
-                      <th className="py-1 text-start">Descripción</th>
-                      <th className="text-end py-1">Precio</th>
-                      <th className="text-end py-1 pe-2">Total</th>
+                      <th className="py-1 ps-2 text-start">Código.</th>
+                      <th className="py-1 text-start">Nombre ítem</th>
+                      <th className="py-1 text-start">Imagen</th> 
+                      <th className="py-1 text-start">Descripcion</th>  
+                      <th className="py-1 text-start">Precio unitario</th>
+                      <th className="py-1 text-start">Precio total</th>                   
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item, i) => (
                       <tr key={i} style={{ pageBreakInside: 'avoid' }}>
                         <td className="text-start ps-2 fw-bold">{item.cantidad}</td>
-                        <td className="text-start">
-                            {item.nombre} 
-                            {item.codigo && <div className="text-muted small" style={{fontSize: '10px'}}>COD: {item.codigo}</div>}
-                        </td>
-                        <td className="text-end">${parseFloat(item.precio).toFixed(2)}</td>
-                        <td className="text-end fw-bold pe-2">${(item.cantidad * item.precio).toFixed(2)}</td>
+                        <td className="text-start">{item.codigo || 'N/A'}</td>
+                        <td className="text-start">{item.nombre || 'N/A'}</td>
+                        <td className="text-center py-3">
+                {item.imagenURL ? (
+                  <img 
+                    src={item.imagenURL} 
+                    alt="x" 
+                    style={{ 
+                        width: '200px', 
+                        height: '200px', 
+                        objectFit: 'contain',
+                        borderRadius: '4px',
+                        backgroundColor: 'white',
+                        border: '1px solid #dee2e6'
+                    }}
+                  />
+                ) : 'N/A'}
+              </td>
+                         <td className="text-start ps-2">{item.descripcion || 'N/A'}</td>
+                         <td className="text-start ps-2 fw-bold">${item.precio.toFixed(2)}</td>
+                          <td className="text-start ps-2 fw-bold">${(item.cantidad * item.precio).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
