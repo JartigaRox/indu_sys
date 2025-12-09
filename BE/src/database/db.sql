@@ -65,6 +65,7 @@ CREATE TABLE Productos (
     Imagen VARBINARY(MAX) -- Opción A: Guardar la imagen directo en BD
     -- ImagenURL NVARCHAR(MAX) -- Opción B: Guardar solo la ruta (comentar la línea de arriba si usas esta)
 );
+ALTER TABLE Productos ALTER COLUMN Descripcion NVARCHAR(1000);
 GO
 
 -- =============================================
