@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import EditProductModal from '../componets/EditProductModal';
 import ImportProductsModal from '../componets/ImportProductsModal';
+import CreateProductModal from '../componets/CreateProductModal';
 
 const Products = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Products = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -78,7 +80,7 @@ const Products = () => {
           >
             <FileSpreadsheet size={18} /> Importar desde Excel
           </Button>
-          <Button className="btn-institutional d-flex align-items-center gap-2" onClick={() => navigate('/productos/nuevo')}>
+          <Button className="btn-institutional d-flex align-items-center gap-2" onClick={() => setShowCreateModal(true)}>
             <Plus size={18} /> Nuevo Producto
           </Button>
         </div>
@@ -177,6 +179,14 @@ const Products = () => {
           )}
         </Card.Body>
       </Card>
+
+      <CreateProductModal
+        show={showCreateModal}
+        onHide={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          fetchProducts();
+        }}
+      />
 
       <EditProductModal
         show={showEditModal}

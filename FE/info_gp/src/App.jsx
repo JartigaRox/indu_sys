@@ -10,7 +10,6 @@ import CreateClient from './pages/CreateClient';
 import Quotations from './pages/Quotations';
 import CreateQuotation from './pages/CreateQuotation';
 import Products from './pages/Products';
-import CreateProduct from './pages/CreateProduct';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
 
@@ -46,7 +45,6 @@ function App() {
 
             {/* Productos */}
             <Route path="/productos" element={<Products />} />
-            <Route path="/productos/nuevo" element={<CreateProduct />} />
 
             {/* Ordenes y Usuarios */}
             <Route path="/ordenes" element={<Orders />} />
