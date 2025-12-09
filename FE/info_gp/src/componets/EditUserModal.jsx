@@ -9,7 +9,8 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
         email: '',
         rolId: '',
         tipoVendedorId: '',
-        password: ''
+        password: '',
+        confirmPassword: ''
     });
     const [roles, setRoles] = useState([]);
     const [sellerTypes, setSellerTypes] = useState([]);
@@ -24,7 +25,8 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
                     email: user.CorreoElectronico || '',
                     rolId: user.RolID || '',
                     tipoVendedorId: user.TipoVendedorID || '',
-                    password: ''
+                    password: '',
+                    confirmPassword: ''
                 });
             }
         }
@@ -55,6 +57,12 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
         
         if (!formData.username || !formData.rolId) {
             Swal.fire('Error', 'Usuario y rol son obligatorios', 'error');
+            return;
+        }
+
+        // Validar que las contraseñas coincidan si se está cambiando
+        if (formData.password && formData.password !== formData.confirmPassword) {
+            Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
             return;
         }
 
@@ -143,7 +151,7 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
                     </Row>
 
                     <Row>
-                        <Col md={12}>
+                        <Col md={6}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Nueva Contraseña</Form.Label>
                                 <Form.Control
@@ -154,7 +162,22 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
                                     placeholder="Dejar en blanco para no cambiar"
                                 />
                                 <Form.Text className="text-muted">
-                                    Solo completa este campo si deseas cambiar la contraseña
+                                    Solo completa si deseas cambiar la contraseña
+                                </Form.Text>
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Confirmar Nueva Contraseña</Form.Label>
+                                <Form.Control
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    placeholder="Repetir la nueva contraseña"
+                                />
+                                <Form.Text className="text-muted">
+                                    Debe coincidir con la contraseña anterior
                                 </Form.Text>
                             </Form.Group>
                         </Col>
