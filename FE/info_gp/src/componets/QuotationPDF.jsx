@@ -29,7 +29,6 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
       <div className="text-end">
         <h2 className="fw-bold m-0" style={{ color: '#008CB4', fontSize: '24px' }}>COTIZACIÓN</h2>
         <div className="fw-bold text-secondary fs-5"># {numeroCotizacion}</div>
-        <div className="small">Fecha: {new Date(fecha).toLocaleDateString()}</div>
       </div>
     </div>
   );
@@ -44,7 +43,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   const FooterStyleA = () => (
     <div className="pt-2 border-top w-100" style={{ borderColor: '#005689', borderWidth: '3px' }}>
       <div className="d-flex flex-wrap justify-content-center gap-3 text-dark" style={{ fontSize: '10px' }}>
-         <div className="d-flex align-items-center"><FaMapMarkerAlt className="me-1"/> {empresa.Direccion}</div>
+         <div className="d-flex align-items-center text-nowrap"><FaMapMarkerAlt className="me-1"/> {empresa.Direccion}</div>
          <div className="d-flex align-items-center"><FaPhoneAlt className="me-1"/> {empresa.Telefono}</div>
          <div className="d-flex align-items-center"><FaWhatsapp className="me-1"/> {empresa.Celular}</div>
          <div className="d-flex align-items-center"><FaEnvelope className="me-1"/> <span style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span></div>
@@ -54,10 +53,10 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   );
 
   return (
-    // IMPORTANTE: Quitamos p-5 del contenedor principal para manejar márgenes con @page
+    // IMPORTANTE: Padding para vista previa y padding adicional en impresión
     <div 
       ref={ref} 
-      className="bg-white"
+      className="bg-white p-4 pdf-container"
       style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', color: 'black', textTransform: 'uppercase' }}
     >
       <table className="print-table w-100">
@@ -84,15 +83,18 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                   <div className="col-8">
                     <p className="mb-0 text-muted small">Lourdes colón, {new Date(fecha).toLocaleDateString()}</p>
                     <p className="fw-bold mb-0 fs-6">{cliente?.NombreCliente}</p>
-                    <p className="mb-0 text-muted small">{cliente?.DireccionCalle}</p>
+                    <p className="mb-0"><strong>Atención A:</strong> {cliente?.AtencionA || 'N/A'}</p>
+                    <p className="mb-0 text-muted small">{cliente?.Telefono}</p>
+                    <p className="mb-0 text-muted small">
+                      {cliente?.DireccionCalle}
+                      {cliente?.Distrito && `, ${cliente.Distrito}`}
+                      {cliente?.Municipio && `, ${cliente.Municipio}`}
+                      {cliente?.Departamento && `, ${cliente.Departamento}`}
+                    </p>
                     <p></p>
                     <p className="mb-0 text-muted small">PRESENTE</p>
                     <p></p>
                     <p className="mb-0 text-muted small">NOS COMPLACE ENNVIARLE LA SIGUIENTE COTIZACIÓN PARA LOS SUMINISTROS DE:</p>
-                  </div>
-                  <div className="col-4 text-end">
-                    <p className="mb-0"><strong>Atención A:</strong> {cliente?.AtencionA || 'N/A'}</p>
-                    <p className="mb-0"><strong>Vendedor:</strong> {user?.username}</p>
                   </div>
                 </div>
 
@@ -154,11 +156,11 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                             </ul>
                           ) : (
                             <ul className="mb-0 ps-3" style={{ fontSize: '10px' }}>
+                              <li>NO HAS </li>
+                              <li>PUESTO LA</li>
                               <li>DESCRIPCIÓN</li>
-                              <li>DESCRIPCIÓN</li>
-                              <li>DESCRIPCIÓN</li>
-                              <li>DESCRIPCIÓN</li>
-                              <li>DESCRIPCIÓN</li>
+                              <li>DEL PRODUCTO</li>
+                              <li>¡¡¡¡¡¡¡¡¡¡¡¡</li>
                             </ul>
                           )}
                         </td>
@@ -189,9 +191,9 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                     
                     {/* Totales */}
                     <div className="d-flex justify-content-end mb-5">
-                        <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: mainColor, minWidth: '250px', display:'flex', justifyContent:'space-between', fontSize: '14px' }}>
-                        <span>TOTAL GENERAL:</span>
-                        <span>${total.toFixed(2)}</span>
+                        <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: '#008CB4', minWidth: '250px', display:'flex', justifyContent:'space-between', fontSize: '14px' }}>
+                        <span>TOTAL DE LA COTIZACION:  </span>
+                        <span> <strong>${total.toFixed(2)}</strong></span>
                         </div>
                     </div>
 

@@ -37,16 +37,22 @@ body {
 /* --- ESTILOS DE IMPRESIÓN (react-to-print) --- */
 
 @media print {
-  /* 1. Ocultar encabezados/pies de página del NAVEGADOR (Fecha, URL, Título) */
+  /* Configuración de página - margin 0 oculta header/footer del navegador */
   @page {
     size: auto;
-    margin: 0mm; /* ¡Esto es la clave! Quita los textos automáticos de las esquinas */
+    margin: 0mm;
   }
 
-  /* 2. Establecer el margen real de tu contenido dentro del body */
+  /* Establecer colores exactos en impresión y márgenes internos */
   body {
-    margin: 15mm 15mm 15mm 15mm; /* Arriba, Derecha, Abajo, Izquierda */
-    -webkit-print-color-adjust: exact; /* Para que imprima colores de fondo exactos */
+    margin: 15mm;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Remover padding del contenedor principal en impresión */
+  .bg-white {
+    padding: 0 !important;
   }
 
   /* Ocultar elementos de la interfaz (botones, menús) */
@@ -65,25 +71,34 @@ body {
 
 /* Espacio reservado para el Header en cada página */
 .header-space {
-  height: 140px; /* Ajusta según la altura real de tu header */
+  height: 160px; /* Ajusta según la altura real de tu header */
 }
 
 /* Espacio reservado para el Footer en cada página */
 .footer-space {
-  height: 80px; /* IMPORTANTE: Debe ser igual o mayor que la altura de .print-footer-fixed */
+  height: 100px; /* IMPORTANTE: Debe ser igual o mayor que la altura de .print-footer-fixed */
 }
 
-/* El Footer REAL (Fijo visualmente abajo) */
+/* El Footer REAL (Solo fijo en impresión) */
 .print-footer-fixed {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 80px; /* Altura fija del footer */
-  padding-left: 15mm; /* Compensar margen del body si es necesario */
-  padding-right: 15mm;
-  background-color: white; /* Fondo blanco para tapar contenido si se pasa */
-  z-index: 100;
+  height: 100px; /* Altura fija del footer */
+  background-color: white;
+}
+
+@media print {
+  .print-footer-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+}
+
+/* Asegurar que el contenido no se solape con header/footer fijos */
+.content-wrapper {
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 /* Bloque para evitar cortes feos */

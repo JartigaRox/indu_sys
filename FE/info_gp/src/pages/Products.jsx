@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Card, Table, Button, Container, Spinner, Badge, Form, InputGroup } from 'react-bootstrap';
-import { Plus, Package, Edit, Trash2, Search, FileSpreadsheet } from 'lucide-react';
+import { Plus, Package, Edit, Trash2, Search, FileSpreadsheet, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import * as XLSX from 'xlsx';
 import EditProductModal from '../componets/EditProductModal';
 import ImportProductsModal from '../componets/ImportProductsModal';
 import CreateProductModal from '../componets/CreateProductModal';
@@ -68,11 +69,59 @@ const Products = () => {
     });
   };
 
+  const handleExportToExcel = () => {
+    if (products.length === 0) {
+      Swal.fire('Sin datos', 'No hay productos para exportar', 'info');
+      return;
+    }
+
+    // Preparar datos para exportar
+    const dataToExport = products.map(p => ({
+      Código: p.CodigoProducto,
+      Nombre: p.Nombre,
+      Descripción: p.Descripcion || '',
+      Categoría: p.Categoria || '',
+      Subcategoría: p.Subcategoria || '',
+      'Tipo de Mueble': p.TipoMueble || '',
+      Estado: p.EstadoProducto || ''
+    }));
+
+    // Crear hoja de Excel
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    
+    // Ajustar ancho de columnas
+    ws['!cols'] = [
+      { wch: 20 }, // Código
+      { wch: 40 }, // Nombre
+      { wch: 50 }, // Descripción
+      { wch: 20 }, // Categoría
+      { wch: 30 }, // Subcategoría
+      { wch: 20 }, // Tipo de Mueble
+      { wch: 20 }  // Estado
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+    
+    // Generar archivo con fecha
+    const fecha = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `productos_${fecha}.xlsx`);
+    
+    Swal.fire('Exportado', `${products.length} productos exportados correctamente`, 'success');
+  };
+
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="text-inst-blue fw-bold mb-0">Inventario de Productos</h2>
         <div className="d-flex gap-2">
+          <Button 
+            variant="outline-primary" 
+            className="d-flex align-items-center gap-2" 
+            onClick={handleExportToExcel}
+          >
+            <Download size={18} /> Exportar a Excel
+          </Button>
           <Button 
             variant="outline-success" 
             className="d-flex align-items-center gap-2" 

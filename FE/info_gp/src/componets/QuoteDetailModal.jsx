@@ -24,8 +24,6 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
       api.get(`/quotations/${quoteId}`)
         .then(res => {
             const data = res.data;
-            console.log('📦 Datos del backend:', data);
-            console.log('📦 Items:', data.items);
             const formattedData = {
                 cliente: {
                     NombreCliente: data.NombreCliente,

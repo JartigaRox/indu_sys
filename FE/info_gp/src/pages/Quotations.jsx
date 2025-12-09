@@ -118,15 +118,7 @@ const Quotations = () => {
             </div>
           )}
 
-          {!loading && !error && quotes.length > 0 && filteredQuotes.length === 0 && (
-            <div className="text-center p-5 text-muted">
-                <Search size={48} className="mb-3 opacity-50" />
-                <p>No se encontraron cotizaciones con "{searchTerm}"</p>
-                <Button variant="link" onClick={() => setSearchTerm('')}>Limpiar búsqueda</Button>
-            </div>
-          )}
-
-          {!loading && filteredQuotes.length > 0 && (
+          {!loading && quotes.length > 0 && (
             <Table hover responsive className="mb-0 align-middle">
               <thead className="bg-light text-secondary small text-uppercase">
                 <tr>
@@ -140,7 +132,7 @@ const Quotations = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredQuotes.map(q => (
+                {quotes.map(q => (
                   <tr key={q.CotizacionID}>
                     <td className="ps-4 fw-bold text-inst-blue">{q.NumeroCotizacion}</td>
                     <td>

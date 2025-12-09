@@ -20,12 +20,13 @@ const CreateQuotation = () => {
 
   // Estados de Datos
   const [clients, setClients] = useState([]);
+  const [clientOptions, setClientOptions] = useState([]);
   const [productOptions, setProductOptions] = useState([]); 
   const [companies, setCompanies] = useState([]);
   const [nextId, setNextId] = useState(0);
   
   // Formulario Encabezado
-  const [selectedClient, setSelectedClient] = useState('');
+  const [selectedClient, setSelectedClient] = useState(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
   const [fechaEntrega, setFechaEntrega] = useState('');
   
@@ -38,7 +39,7 @@ const CreateQuotation = () => {
   const [loading, setLoading] = useState(true);
 
   // Datos calculados para el PDF (se usan tanto en vista previa como en impresión)
-  const clientData = clients.find(c => c.ClienteID === parseInt(selectedClient));
+  const clientData = clients.find(c => c.ClienteID === selectedClient?.value);
   const companyData = companies.find(c => c.EmpresaID === parseInt(selectedCompanyId));
   const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'XX';
   const displayId = nextId ? nextId.toString().padStart(6, '0') : '000000';
@@ -74,6 +75,13 @@ const CreateQuotation = () => {
         setClients(resClients.data);
         setCompanies(resCompanies.data);
         
+        const clientOpts = resClients.data.map(c => ({
+            value: c.ClienteID,
+            label: c.NombreCliente,
+            data: c
+        }));
+        setClientOptions(clientOpts);
+        
         const options = resProducts.data.map(p => ({
             value: p.ProductoID,
             label: `${p.CodigoProducto} - ${p.Nombre}`,
@@ -89,7 +97,8 @@ const CreateQuotation = () => {
             const resQuote = await api.get(`/quotations/${id}`);
             const q = resQuote.data;
             
-            setSelectedClient(q.ClienteID);
+            const clientOpt = clientOpts.find(opt => opt.value === q.ClienteID);
+            setSelectedClient(clientOpt || null);
             setSelectedCompanyId(q.EmpresaID);
             setFechaEntrega(q.FechaEntregaEstimada ? q.FechaEntregaEstimada.split('T')[0] : '');
             
@@ -158,7 +167,7 @@ const CreateQuotation = () => {
     }
     
     const payload = {
-        clienteId: parseInt(selectedClient),
+        clienteId: selectedClient.value,
         empresaId: parseInt(selectedCompanyId),
         nombreQuienCotiza: user.username,
         telefonoSnapshot: clientData?.Telefono,
@@ -226,10 +235,13 @@ const CreateQuotation = () => {
 
               <Form.Group className="mb-3">
                 <Form.Label className="small text-muted fw-bold">CLIENTE</Form.Label>
-                <Form.Select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)}>
-                  <option value="">-- Seleccionar --</option>
-                  {clients.map(c => <option key={c.ClienteID} value={c.ClienteID}>{c.NombreCliente}</option>)}
-                </Form.Select>
+                <Select 
+                  options={clientOptions} 
+                  value={selectedClient} 
+                  onChange={setSelectedClient} 
+                  placeholder="Buscar cliente..." 
+                  isClearable
+                />
               </Form.Group>
 
             </Card.Body>

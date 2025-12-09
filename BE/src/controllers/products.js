@@ -113,8 +113,14 @@ export const createProduct = async (req, res) => {
         
         const { CodigoCategoria, CodigoSubcategoria } = codesResult.recordset[0];
 
-        // 2. Correlativo
-        const idResult = await pool.request().query("SELECT ISNULL(MAX(ProductoID), 0) + 1 as NextID FROM Productos");
+        // 2. Correlativo por subcategoría
+        const idResult = await pool.request()
+            .input("subId", sql.Int, subcategoriaId)
+            .query(`
+                SELECT ISNULL(MAX(CAST(RIGHT(CodigoProducto, 4) AS INT)), 0) + 1 as NextID 
+                FROM Productos 
+                WHERE SubcategoriaID = @subId
+            `);
         const nextId = idResult.recordset[0].NextID;
 
         // 3. CAMBIO A 4 DÍGITOS AQUÍ: .padStart(4, '0')
