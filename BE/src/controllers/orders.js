@@ -337,6 +337,19 @@ export const updateOrder = async (req, res) => {
         observaciones: toStr(body.observaciones)
     };
 
+    // Manejo de archivos subidos
+    let docAnticipoPDF = null;
+    let docComplementoPDF = null;
+
+    if (req.files) {
+        if (req.files.docAnticipo && req.files.docAnticipo[0]) {
+            docAnticipoPDF = req.files.docAnticipo[0].filename;
+        }
+        if (req.files.docComplemento && req.files.docComplemento[0]) {
+            docComplementoPDF = req.files.docComplemento[0].filename;
+        }
+    }
+
     const totalPagado = datos.pagoAnticipo + datos.pagoComplemento;
 
     try {
@@ -354,7 +367,22 @@ export const updateOrder = async (req, res) => {
         const montoVenta = orden.recordset[0].MontoVenta;
         const pagoPendiente = montoVenta - totalPagado;
 
-        await pool.request()
+        // Preparar query dinámicamente
+        let updateQuery = `
+            UPDATE Ordenes SET
+                FechaEntrega = @FechaEntrega,
+                UbicacionEntrega = @UbicacionEntrega,
+                PagoAnticipo = @PagoAnticipo,
+                MetodoAnticipoID = @MetodoAnticipoID,
+                PagoComplemento = @PagoComplemento,
+                MetodoComplementoID = @MetodoComplementoID,
+                TotalPagado = @TotalPagado,
+                PagoPendiente = @PagoPendiente,
+                EstadoFacturaID = @EstadoFacturaID,
+                EstadoOrdenID = @EstadoOrdenID,
+                Observaciones = @Observaciones`;
+        
+        const request = pool.request()
             .input('OrdenID', sql.Int, id)
             .input('FechaEntrega', sql.DateTime, datos.fechaEntrega)
             .input('UbicacionEntrega', sql.NVarChar, datos.ubicacionEntrega)
@@ -366,22 +394,21 @@ export const updateOrder = async (req, res) => {
             .input('PagoPendiente', sql.Decimal(18,2), pagoPendiente)
             .input('EstadoFacturaID', sql.Int, datos.estadoFacturaId)
             .input('EstadoOrdenID', sql.Int, datos.estadoOrdenId)
-            .input('Observaciones', sql.NVarChar, datos.observaciones)
-            .query(`
-                UPDATE Ordenes SET
-                    FechaEntrega = @FechaEntrega,
-                    UbicacionEntrega = @UbicacionEntrega,
-                    PagoAnticipo = @PagoAnticipo,
-                    MetodoAnticipoID = @MetodoAnticipoID,
-                    PagoComplemento = @PagoComplemento,
-                    MetodoComplementoID = @MetodoComplementoID,
-                    TotalPagado = @TotalPagado,
-                    PagoPendiente = @PagoPendiente,
-                    EstadoFacturaID = @EstadoFacturaID,
-                    EstadoOrdenID = @EstadoOrdenID,
-                    Observaciones = @Observaciones
-                WHERE OrdenID = @OrdenID
-            `);
+            .input('Observaciones', sql.NVarChar, datos.observaciones);
+
+        // Agregar archivos si fueron subidos
+        if (docAnticipoPDF) {
+            updateQuery += `, DocAnticipoPDF = @DocAnticipoPDF`;
+            request.input('DocAnticipoPDF', sql.NVarChar, docAnticipoPDF);
+        }
+        if (docComplementoPDF) {
+            updateQuery += `, DocComplementoPDF = @DocComplementoPDF`;
+            request.input('DocComplementoPDF', sql.NVarChar, docComplementoPDF);
+        }
+
+        updateQuery += ` WHERE OrdenID = @OrdenID`;
+
+        await request.query(updateQuery);
 
         res.json({ message: 'Orden actualizada exitosamente' });
     } catch (error) {

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Modal, Button, Spinner, Badge, Row, Col, Card } from 'react-bootstrap';
-import { Printer, Eye } from 'lucide-react';
+import { Printer, Eye, FileCheck, FileText, ExternalLink } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import api from '../api/axios';
 import OrderPDF from './OrderPDF';
@@ -49,6 +49,10 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
             montoVenta: order.MontoVenta,
             totalPagado: order.TotalPagado,
             pagoPendiente: order.PagoPendiente,
+            pagoAnticipo: order.PagoAnticipo,
+            pagoComplemento: order.PagoComplemento,
+            docAnticipoPDF: order.DocAnticipoPDF,
+            docComplementoPDF: order.DocComplementoPDF,
             estadoOrden: order.EstadoNombre,
             estadoFactura: order.EstadoFacturaNombre || 'N/A',
             usuarioModificacion: order.UsuarioModificacion || 'No disponible',
@@ -166,10 +170,60 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
                       <span className="small text-success">Total Pagado:</span>
                       <strong className="text-success">${parseFloat(orderData?.totalPagado || 0).toFixed(2)}</strong>
                     </div>
-                    <div className="d-flex justify-content-between pt-2 border-top">
+                    <div className="d-flex justify-content-between pt-2 border-top mb-3">
                       <span className="small fw-bold">Pendiente:</span>
                       <strong className="text-danger">${parseFloat(orderData?.pagoPendiente || 0).toFixed(2)}</strong>
                     </div>
+
+                    {/* Comprobantes de Pago */}
+                    {(orderData?.docAnticipoPDF || orderData?.docComplementoPDF) && (
+                      <div className="mt-3 pt-3 border-top">
+                        <h6 className="fw-bold mb-2 small text-secondary">
+                          <FileCheck size={14} className="me-1" />
+                          COMPROBANTES
+                        </h6>
+                        
+                        {orderData?.docAnticipoPDF && (
+                          <div className="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                            <div className="d-flex align-items-center gap-2">
+                              <FileText size={16} className="text-primary" />
+                              <div>
+                                <div className="small fw-bold">Anticipo</div>
+                                <div className="small text-muted">${parseFloat(orderData?.pagoAnticipo || 0).toFixed(2)}</div>
+                              </div>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline-primary" 
+                              onClick={() => window.open(`http://localhost:5000/uploads/orders/${orderData.docAnticipoPDF}`, '_blank')}
+                              className="d-flex align-items-center gap-1"
+                            >
+                              <ExternalLink size={14} /> Ver
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {orderData?.docComplementoPDF && (
+                          <div className="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <div className="d-flex align-items-center gap-2">
+                              <FileText size={16} className="text-success" />
+                              <div>
+                                <div className="small fw-bold">Complemento</div>
+                                <div className="small text-muted">${parseFloat(orderData?.pagoComplemento || 0).toFixed(2)}</div>
+                              </div>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline-success" 
+                              onClick={() => window.open(`http://localhost:5000/uploads/orders/${orderData.docComplementoPDF}`, '_blank')}
+                              className="d-flex align-items-center gap-1"
+                            >
+                              <ExternalLink size={14} /> Ver
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </Card.Body>
                 </Card>
               </div>

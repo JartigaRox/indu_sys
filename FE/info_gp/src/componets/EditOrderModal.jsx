@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col, Card } from 'react-bootstrap';
+import { Modal, Button, Form, Row, Col, Card, Alert } from 'react-bootstrap';
+import { Upload, FileText } from 'lucide-react';
 import api from '../api/axios';
 import Swal from 'sweetalert2';
 
@@ -21,6 +22,9 @@ const EditOrderModal = ({ show, onHide, order, onSuccess }) => {
     estadoFacturaId: '',
     estadoOrdenId: ''
   });
+
+  const [fileAnticipo, setFileAnticipo] = useState(null);
+  const [fileComplemento, setFileComplemento] = useState(null);
 
   // Cargar opciones
   useEffect(() => {
@@ -72,7 +76,35 @@ const EditOrderModal = ({ show, onHide, order, onSuccess }) => {
     }
 
     try {
-      await api.put(`/orders/${order.OrdenID}`, form);
+      const formData = new FormData();
+      
+      // Agregar datos del formulario (solo si tienen valor)
+      Object.keys(form).forEach(key => {
+        const value = form[key];
+        // Si el valor está vacío ('') o es undefined, enviar null para campos opcionales
+        if (key === 'metodoAnticipoId' || key === 'metodoComplementoId' || key === 'estadoFacturaId') {
+          formData.append(key, value || '');
+        } else if (value !== '' && value !== null && value !== undefined) {
+          formData.append(key, value);
+        } else if (key === 'fechaEntrega' || key === 'ubicacionEntrega' || key === 'observaciones') {
+          formData.append(key, value || '');
+        }
+      });
+      
+      // Agregar archivos si existen
+      if (fileAnticipo) {
+        formData.append('docAnticipo', fileAnticipo);
+      }
+      if (fileComplemento) {
+        formData.append('docComplemento', fileComplemento);
+      }
+
+      await api.put(`/orders/${order.OrdenID}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
       Swal.fire('¡Actualizado!', 'La orden se actualizó correctamente', 'success');
       onSuccess();
       onHide();
@@ -138,6 +170,33 @@ const EditOrderModal = ({ show, onHide, order, onSuccess }) => {
                 </Col>
               </Row>
 
+              {/* Comprobante Anticipo */}
+              <Row className="mb-3">
+                <Col md={12}>
+                  <Form.Label className="small fw-bold text-primary">
+                    <Upload size={14} className="me-1" />
+                    Comprobante de Anticipo (PDF)
+                  </Form.Label>
+                  <Form.Control 
+                    type="file" 
+                    accept=".pdf"
+                    onChange={(e) => setFileAnticipo(e.target.files[0])}
+                    size="sm"
+                  />
+                  {fileAnticipo && (
+                    <Alert variant="success" className="mt-2 py-1 px-2 small d-flex align-items-center gap-2">
+                      <FileText size={14} />
+                      <span>{fileAnticipo.name}</span>
+                    </Alert>
+                  )}
+                  {ordenCompleta?.DocAnticipoPDF && !fileAnticipo && (
+                    <Alert variant="info" className="mt-2 py-1 px-2 small">
+                      Ya existe: {ordenCompleta.DocAnticipoPDF}
+                    </Alert>
+                  )}
+                </Col>
+              </Row>
+
               <Row>
                 <Col md={6}>
                   <Form.Label className="small">Complemento ($)</Form.Label>
@@ -149,6 +208,33 @@ const EditOrderModal = ({ show, onHide, order, onSuccess }) => {
                     <option value="">Seleccione</option>
                     {opciones.paymentMethods.map(m => <option key={m.MetodoID} value={m.MetodoID}>{m.Nombre}</option>)}
                   </Form.Select>
+                </Col>
+              </Row>
+
+              {/* Comprobante Complemento */}
+              <Row className="mb-3 mt-2">
+                <Col md={12}>
+                  <Form.Label className="small fw-bold text-success">
+                    <Upload size={14} className="me-1" />
+                    Comprobante de Complemento (PDF)
+                  </Form.Label>
+                  <Form.Control 
+                    type="file" 
+                    accept=".pdf"
+                    onChange={(e) => setFileComplemento(e.target.files[0])}
+                    size="sm"
+                  />
+                  {fileComplemento && (
+                    <Alert variant="success" className="mt-2 py-1 px-2 small d-flex align-items-center gap-2">
+                      <FileText size={14} />
+                      <span>{fileComplemento.name}</span>
+                    </Alert>
+                  )}
+                  {ordenCompleta?.DocComplementoPDF && !fileComplemento && (
+                    <Alert variant="info" className="mt-2 py-1 px-2 small">
+                      Ya existe: {ordenCompleta.DocComplementoPDF}
+                    </Alert>
+                  )}
                 </Col>
               </Row>
 

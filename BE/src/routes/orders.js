@@ -42,6 +42,9 @@ router.post('/', verifyToken, upload.fields([
 ]), createOrder);
 
 // 5. Actualizar Orden
-router.put('/:id', verifyToken, updateOrder);
+router.put('/:id', verifyToken, upload.fields([
+    { name: 'docAnticipo', maxCount: 1 }, 
+    { name: 'docComplemento', maxCount: 1 }
+]), updateOrder);
 
 export default router;
