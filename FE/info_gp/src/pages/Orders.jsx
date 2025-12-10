@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
 import { Card, Table, Button, Container, Badge, Spinner, InputGroup, Form } from 'react-bootstrap';
-import { Printer, Edit, Search, Eye } from 'lucide-react';
+import { Printer, Edit, Search, Eye, Calendar } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import OrderPDF from '../componets/OrderPDF';
 import EditOrderModal from '../componets/EditOrderModal';
 import OrderDetailModal from '../componets/OrderDetailModal';
+import OrderCalendarModal from '../componets/OrderCalendarModal';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -24,6 +25,9 @@ const Orders = () => {
   // Estado para modal de detalle
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+
+  // Estado para calendario
+  const [showCalendar, setShowCalendar] = useState(false);
 
 
   const handlePrint = useReactToPrint({
@@ -86,6 +90,7 @@ const Orders = () => {
         
         // Combinar todos los datos
         const fullData = {
+          numeroOrden: orderData.NumeroOrden,
           NumeroCotizacion: cotizacion.NumeroCotizacion,
           NombreCliente: cotizacion.NombreCliente,
           FechaEntrega: orderData.FechaEntrega || quotationFull.FechaEntregaEstimada,
@@ -113,7 +118,17 @@ const Orders = () => {
 
   return (
     <Container className="py-4">
-      <h2 className="text-inst-blue fw-bold mb-4">Gestión de Órdenes</h2>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="text-inst-blue fw-bold mb-0">Gestión de Órdenes</h2>
+        <Button 
+          variant="primary" 
+          className="d-flex align-items-center gap-2"
+          onClick={() => setShowCalendar(true)}
+        >
+          <Calendar size={18} />
+          Visualizar Calendario
+        </Button>
+      </div>
 
       {/* Buscador */}
       <Card className="shadow-sm border-0 mb-3">
@@ -264,6 +279,13 @@ const Orders = () => {
         onHide={() => setShowDetailModal(false)}
         orderId={selectedOrderId}
         onRefresh={() => fetchOrders()}
+      />
+
+      {/* Modal de Calendario */}
+      <OrderCalendarModal
+        show={showCalendar}
+        onHide={() => setShowCalendar(false)}
+        orders={orders}
       />
 
     </Container>

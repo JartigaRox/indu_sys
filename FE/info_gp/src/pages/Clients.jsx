@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Card, Table, Button, Container, Badge, Spinner, Alert, Form, InputGroup } from 'react-bootstrap';
 import { Plus, Users, MapPin, Phone, Search, FileSpreadsheet, Trash2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import EditClientModal from '../componets/EditClientModal';
+import CreateClientModal from '../componets/CreateClientModal';
 import ImportClientsModal from '../componets/ImportClientsModal';
 
 const Clients = () => {
-    const navigate = useNavigate();
     const [clients, setClients] = useState([]);
     const [filteredClients, setFilteredClients] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedClient, setSelectedClient] = useState(null);
     const [showImportModal, setShowImportModal] = useState(false);
 
@@ -102,7 +102,7 @@ const Clients = () => {
                     </Button>
                     <Button
                         className="btn-institutional d-flex align-items-center gap-2"
-                        onClick={() => navigate('/clientes/nuevo')}
+                        onClick={() => setShowCreateModal(true)}
                     >
                         <Plus size={18} /> Nuevo Cliente
                     </Button>
@@ -227,6 +227,14 @@ const Clients = () => {
                 show={showEditModal}
                 onHide={() => setShowEditModal(false)}
                 client={selectedClient}
+                onSuccess={() => {
+                    fetchClients();
+                }}
+            />
+
+            <CreateClientModal
+                show={showCreateModal}
+                onHide={() => setShowCreateModal(false)}
                 onSuccess={() => {
                     fetchClients();
                 }}

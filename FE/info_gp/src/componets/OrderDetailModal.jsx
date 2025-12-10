@@ -141,7 +141,7 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
                       <Col xs={12}>
                         <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
                           <span className="text-muted">Fecha Entrega:</span>
-                          <strong>{orderData?.fechaEntrega ? new Date(orderData.fechaEntrega).toLocaleDateString() : 'N/A'}</strong>
+                          <strong>{orderData?.FechaEntrega ? new Date(orderData.FechaEntrega).toLocaleDateString() : 'N/A'}</strong>
                         </div>
                       </Col>
                       <Col xs={12}>

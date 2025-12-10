@@ -59,8 +59,12 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
 
   const FooterStyleA = () => (
     <div className="pt-2 border-top w-100" style={{ borderColor: '#005689', borderWidth: '3px' }}>
+      {/* Dirección en línea separada arriba */}
+      <div className="d-flex justify-content-center text-dark mb-1" style={{ fontSize: '9px' }}>
+         <div className="d-flex align-items-center"><FaMapMarkerAlt className="me-1" style={{ minWidth: '12px' }}/> <span>{empresa.Direccion}</span></div>
+      </div>
+      {/* Otros elementos abajo */}
       <div className="d-flex flex-wrap justify-content-center gap-3 text-dark" style={{ fontSize: '10px' }}>
-         <div className="d-flex align-items-center text-nowrap"><FaMapMarkerAlt className="me-1"/> {empresa.Direccion}</div>
          <div className="d-flex align-items-center"><FaPhoneAlt className="me-1"/> {empresa.Telefono}</div>
          <div className="d-flex align-items-center"><FaWhatsapp className="me-1"/> {empresa.Celular}</div>
          <div className="d-flex align-items-center"><FaEnvelope className="me-1"/> <span style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span></div>
@@ -71,8 +75,12 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
 
   const FooterStyleB = () => (
     <div className="pt-2 border-top w-100" style={{ borderColor: '#D4AF37', borderWidth: '3px' }}>
+      {/* Dirección en línea separada arriba */}
+      <div className="d-flex justify-content-center text-dark mb-1" style={{ fontSize: '9px' }}>
+         <div className="d-flex align-items-center"><FaMapMarkerAlt className="me-1" style={{ minWidth: '12px' }}/> <span>{empresa.Direccion}</span></div>
+      </div>
+      {/* Otros elementos abajo */}
       <div className="d-flex flex-wrap justify-content-center gap-3 text-dark" style={{ fontSize: '10px' }}>
-         <div className="d-flex align-items-center text-nowrap"><FaMapMarkerAlt className="me-1"/> {empresa.Direccion}</div>
          <div className="d-flex align-items-center"><FaPhoneAlt className="me-1"/> {empresa.Telefono}</div>
          <div className="d-flex align-items-center"><FaWhatsapp className="me-1"/> {empresa.Celular}</div>
          <div className="d-flex align-items-center"><FaEnvelope className="me-1"/> <span style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span></div>

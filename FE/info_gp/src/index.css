@@ -109,6 +109,15 @@ body {
 
 /* Estilos específicos para OrderPDF */
 @media print {
+  @page {
+    margin: 1.5cm 1cm 1cm 1cm;
+  }
+  
+  body {
+    margin: 0;
+    padding-top: 0.5cm;
+  }
+  
   .order-pdf-table td {
     padding: 8px !important;
     vertical-align: middle !important;
@@ -122,5 +131,18 @@ body {
     visibility: visible !important;
     opacity: 1 !important;
     color: black !important;
+  }
+  
+  /* Saltos de página para tablas de productos */
+  .product-table {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+  
+  .product-table tbody,
+  .product-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }

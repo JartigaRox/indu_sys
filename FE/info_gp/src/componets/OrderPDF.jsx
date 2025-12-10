@@ -6,7 +6,7 @@ const OrderPDF = forwardRef(({ data }, ref) => {
   if (!data) return null;
 
   const { 
-    NumeroCotizacion, NombreCliente, FechaAprobacion, FechaEntrega, 
+    numeroOrden, NumeroCotizacion, NombreCliente, FechaAprobacion, FechaEntrega, 
     ElaboradoPor, EjecutivoVenta, items, empresa 
   } = data;
 
@@ -20,12 +20,28 @@ const OrderPDF = forwardRef(({ data }, ref) => {
   return (
     <div ref={ref} className="p-5 bg-white text-dark" style={{ width: '100%', minHeight: '100%', fontSize: '12px', fontFamily: 'Arial, sans-serif' }}>
 
+      {/* HEADER CON LOGO Y CÓDIGO DE ORDEN */}
+      <div className="d-flex justify-content-between align-items-center mb-4 pb-3" style={{ borderBottom: '3px solid #003366' }}>
+        <div>
+          <img 
+            src="../../src/assets/Op.png" 
+            alt="Logo Empresa" 
+            style={{ height: '80px', objectFit: 'contain' }}
+            onError={(e) => e.target.style.display = 'none'}
+          />
+        </div>
+        <div className="text-end">
+          <h5 className="fw-bold mb-1" style={{ color: '#003366' }}>ORDEN DE PEDIDO</h5>
+          <p className="mb-0 fw-bold" style={{ fontSize: '14px', color: '#003366' }}>{numeroOrden || 'N/A'}</p>
+        </div>
+      </div>
+
       {/* TABLA DE INFORMACIÓN PRINCIPAL */}
       <table className="table table-bordered order-pdf-table mb-4" style={{ border: '2px solid black', width: '100%' }}>
         <tbody>
           <tr style={{ height: '50px' }}>
-            <td className="fw-bold" style={{ ...cellStyle, width: '25%' }}>FECHA DE ORDEN DE INICIO</td>
-            <td style={{ ...cellStyle, width: '25%' }}>{new Date().toLocaleDateString()}</td>
+            <td className="fw-bold" style={{ ...cellStyle, width: '20%' }}>FECHA DE ORDEN DE INICIO</td>
+            <td style={{ ...cellStyle, width: '30%' }}>{new Date().toLocaleDateString()}</td>
             <td className="fw-bold" style={{ ...cellStyle, width: '25%' }}>ÁREA</td>
             <td className="fw-bold" style={{ ...cellStyle, width: '25%' }}>FIRMA</td>
           </tr>
@@ -35,30 +51,29 @@ const OrderPDF = forwardRef(({ data }, ref) => {
             <td style={cellStyle}></td>
           </tr>
           <tr style={{ height: '50px' }}>
-            <td colSpan="2" style={{ ...cellStyle, backgroundColor: '#F7DD6F' }}>{NombreCliente}</td>
+            <td colSpan="2" rowSpan="2" style={{ ...cellStyle, backgroundColor: '#F7DD6F' }}>{NombreCliente}</td>
             <td className="fw-bold" style={cellStyle}>ESTRUCTURA Y PINTURA</td>
             <td style={cellStyle}></td>
           </tr>
           <tr style={{ height: '50px' }}>
-            <td className="fw-bold" style={cellStyle}>FECHA DE ENTREGA</td>
-            <td style={cellStyle}>{FechaEntrega ? new Date(FechaEntrega).toLocaleDateString() : 'N/A'}</td>
             <td className="fw-bold" style={cellStyle}>CARPINTERIA</td>
+            <td style={cellStyle}></td>
+          </tr>
+          <tr style={{ height: '50px' }}>
+            <td className="fw-bold" style={{ ...cellStyle, backgroundColor: '#B6BDE3' }}>FECHA DE ENTREGA</td>
+            <td style={{ ...cellStyle, backgroundColor: '#B6BDE3' }}>{FechaEntrega ? new Date(FechaEntrega).toLocaleDateString() : 'N/A'}</td>
+            <td className="fw-bold" style={cellStyle}>ARMADO</td>
             <td style={cellStyle}></td>
           </tr>
           <tr style={{ height: '50px' }}>
             <td className="fw-bold" style={cellStyle}>ELABORADO POR</td>
             <td style={cellStyle}>{ElaboradoPor || 'N/A'}</td>
-            <td className="fw-bold" style={cellStyle}>ARMADO</td>
+            <td className="fw-bold" style={cellStyle}>LOGISTICA</td>
             <td style={cellStyle}></td>
           </tr>
           <tr style={{ height: '50px' }}>
             <td className="fw-bold" style={cellStyle}>EJECUTIVO DE VENTAS</td>
             <td style={cellStyle}>{EjecutivoVenta || 'N/A'}</td>
-            <td className="fw-bold" style={cellStyle}>LOGISTICA</td>
-            <td style={cellStyle}></td>
-          </tr>
-          <tr style={{ height: '50px' }}>
-            <td colSpan="2" style={cellStyle}></td>
             <td className="fw-bold" style={cellStyle}>BODEGA Y SEGURIDAD INDUSTRIAL</td>
             <td style={cellStyle}></td>
           </tr>
@@ -67,7 +82,7 @@ const OrderPDF = forwardRef(({ data }, ref) => {
 
       {/* TABLA DE PRODUCTOS (mismo diseño que cotización pero sin precios) */}
       {items?.map((item, i) => (
-        <table key={i} className="w-100 mb-4" style={{ border: '2px solid black', borderCollapse: 'collapse', pageBreakInside: 'avoid' }}>
+        <table key={i} className="w-100 mb-4 product-table" style={{ border: '2px solid black', borderCollapse: 'collapse' }}>
           <tbody>
             {/* Fila 1: Headers con CAN, CÓDIGO, NOMBRE ÍTEM */}
             <tr>
@@ -132,24 +147,6 @@ const OrderPDF = forwardRef(({ data }, ref) => {
           </tbody>
         </table>
       ))}
-
-      {/* FIRMAS (Al final de la hoja) */}
-      <div className="fixed-bottom position-absolute w-100 px-5" style={{ bottom: '50px' }}>
-        <div className="row text-center">
-            <div className="col-4">
-                <div className="border-top border-dark pt-2 mx-3">Autorizado</div>
-            </div>
-            <div className="col-4">
-                <div className="border-top border-dark pt-2 mx-3">Entrega / Despacho</div>
-            </div>
-            <div className="col-4">
-                <div className="border-top border-dark pt-2 mx-3">Recibido Conforme</div>
-            </div>
-        </div>
-        <div className="text-center mt-4 text-muted fst-italic" style={{ fontSize: '10px' }}>
-            Este documento es un comprobante interno de orden de trabajo y entrega.
-        </div>
-      </div>
 
     </div>
   );

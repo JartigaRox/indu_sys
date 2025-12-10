@@ -6,7 +6,6 @@ import Layout from './componets/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
-import CreateClient from './pages/CreateClient';
 import Quotations from './pages/Quotations';
 import CreateQuotation from './pages/CreateQuotation';
 import Products from './pages/Products';
@@ -36,7 +35,6 @@ function App() {
             
             {/* Clientes */}
             <Route path="/clientes" element={<Clients />} />
-            <Route path="/clientes/nuevo" element={<CreateClient />} />
 
             {/* Cotizaciones */}
             <Route path="/cotizaciones" element={<Quotations />} />
