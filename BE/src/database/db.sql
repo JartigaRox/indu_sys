@@ -24,7 +24,7 @@ CREATE TABLE Usuarios (
     FOREIGN KEY (RolID) REFERENCES Roles(RolID)
 );
 GO
-
+ALTER TABLE Usuarios ADD FirmaSello VARBINARY(MAX);
 -- Insertar roles por defecto
 INSERT INTO Roles (NombreRol) VALUES ('sudo'), ('operador');
 GO
@@ -596,6 +596,8 @@ INSERT INTO Distritos(Nombre, MunicipioID) VALUES
 ('Cinquera',44);
 
 ALTER TABLE Cotizaciones ADD Estado NVARCHAR(20) DEFAULT 'Pendiente';
+ALTER TABLE Cotizaciones ADD VendedorID INT;
+ALTER TABLE Cotizaciones ADD CONSTRAINT FK_Cotizaciones_Vendedor FOREIGN KEY (VendedorID) REFERENCES Usuarios(UsuarioID);
 
 SELECT * FROM Productos;
 
@@ -846,3 +848,23 @@ Alter TABLE Productos ADD TipoMuebleID INT;
 ALTER TABLE Productos ADD CONSTRAINT FK_Productos_TipoMuebles FOREIGN KEY (TipoMuebleID) REFERENCES TipoMuebles(TipoMuebleID);
 Alter TABLE Productos ADD EstadoProductoID INT;
 ALTER TABLE Productos ADD CONSTRAINT FK_Productos_EstadoProducto FOREIGN KEY (EstadoProductoID) REFERENCES EstadoProducto(EstadoProductoID);
+
+SELECT * FROM Cotizaciones;
+
+-- Actualizar cotizaciones sin vendedor, asignándoles el primer usuario admin
+
+-- Ver los usuarios disponibles
+SELECT UsuarioID, Username FROM Usuarios;
+
+-- Asignar el usuario que desees (cambia el 1 por el UsuarioID correcto)
+DELETE FROM Cotizaciones WHERE CotizacionID = 4;
+
+SELECT * FROM DetalleCotizaciones;
+delete from DetalleCotizaciones where DetalleID = 11;
+
+SELECT * FROM Empresas;
+
+UPDATE Empresas SET Nombre = 'Polígono Don Bosco S.A de C.V.', Direccion = 'Carretera a Sonsonate, Km. 24, Edificio GP Don Bosco distrito de Colón, municipio de La Libertad Oeste, departamento de La Libertad
+', NRC = '253313-1', Telefono = '2398-1275', CorreoElectronico = 'sventas@gpdonbosco.com', PaginaWeb = 'www.gpdonbosco.com', Celular = '6445-5204', NIT = '0614-240216-104-4' WHERE EmpresaID = 2;
+
+UPDATE Empresas SET Telefono = '2318-0756', NRC = '127499-9',NIT = '0715-180179-101-1' WHERE EmpresaID = 1;

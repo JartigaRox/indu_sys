@@ -4,7 +4,7 @@ import { Save, Upload } from 'lucide-react';
 import api from '../api/axios';
 import Swal from 'sweetalert2';
 
-const CreateProductModal = ({ show, onHide, onSuccess }) => {
+const CreateProductModal = ({ show, onHide, onSuccess, initialData = null }) => {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   
@@ -26,8 +26,21 @@ const CreateProductModal = ({ show, onHide, onSuccess }) => {
   useEffect(() => {
     if (show) {
       loadCatalogs();
+      // Si hay initialData, pre-llenar los campos
+      if (initialData) {
+        setNombre(initialData.Nombre || '');
+        setDescripcion(initialData.Descripcion || '');
+        setSelectedCat(initialData.CategoriaID || '');
+        setSelectedSub(initialData.SubcategoriaID || '');
+        setSelectedTipoMueble(initialData.TipoMuebleID || '');
+        setSelectedEstado(initialData.EstadoProductoID || '');
+        // Si el producto tiene imagen, mostrar la vista previa
+        if (initialData.ProductoID) {
+          setPreview(`http://localhost:5000/api/products/image/${initialData.ProductoID}`);
+        }
+      }
     }
-  }, [show]);
+  }, [show, initialData]);
 
   const loadCatalogs = async () => {
     try {
@@ -39,6 +52,12 @@ const CreateProductModal = ({ show, onHide, onSuccess }) => {
       setCategorias(resCats.data);
       setTiposMueble(resTipos.data);
       setEstadosProducto(resEstados.data);
+
+      // Si hay initialData con categoría, cargar subcategorías
+      if (initialData?.CategoriaID) {
+        const resSubs = await api.get(`/products/subcategories/${initialData.CategoriaID}`);
+        setSubcategorias(resSubs.data);
+      }
     } catch (err) {
       console.error(err);
     }

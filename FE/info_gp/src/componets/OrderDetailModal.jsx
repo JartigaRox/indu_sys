@@ -19,20 +19,31 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
   useEffect(() => {
     if (show && orderId) {
       setLoading(true);
-      // Primero obtenemos los datos básicos de la orden
-      api.get(`/orders/full/${orderId}`)
-        .then(async (resOrder) => {
+      
+      const fetchData = async () => {
+        try {
+          // Primero obtenemos los datos básicos de la orden
+          const resOrder = await api.get(`/orders/full/${orderId}`);
           const order = resOrder.data;
           
           // Luego obtenemos los detalles de la cotización asociada
           const resCotizacion = await api.get(`/orders/${order.CotizacionID}`);
           const cotizacion = resCotizacion.data;
           
+          // Obtener datos completos de la cotización para ElaboradoPor y EjecutivoVenta
+          const resQuotationFull = await api.get(`/quotations/${order.CotizacionID}`);
+          const quotationFull = resQuotationFull.data;
+          
           // Combinar datos
           const formattedData = {
             numeroOrden: order.NumeroOrden,
             fechaOrden: order.FechaCreacion,
-            fechaEntrega: order.FechaEntrega,
+            NumeroCotizacion: cotizacion.NumeroCotizacion,
+            NombreCliente: cotizacion.NombreCliente,
+            FechaAprobacion: order.FechaCreacion,
+            FechaEntrega: order.FechaEntrega || quotationFull.FechaEntregaEstimada,
+            ElaboradoPor: order.UsuarioModificacion || quotationFull.NombreQuienCotiza || 'N/A',
+            EjecutivoVenta: quotationFull.VendedorUsername || quotationFull.NombreQuienCotiza || 'N/A',
             ubicacionEntrega: order.UbicacionEntrega,
             observaciones: order.Observaciones,
             montoVenta: order.MontoVenta,
@@ -41,13 +52,6 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
             estadoOrden: order.EstadoNombre,
             estadoFactura: order.EstadoFacturaNombre || 'N/A',
             usuarioModificacion: order.UsuarioModificacion || 'No disponible',
-            cliente: {
-              NombreCliente: cotizacion.NombreCliente,
-              DireccionCalle: cotizacion.DireccionCalle || '',
-              Municipio: cotizacion.Municipio || '',
-              AtencionA: cotizacion.AtencionA || '',
-              Telefono: cotizacion.TelefonoCliente || ''
-            },
             items: cotizacion.items || [],
             empresa: {
               EmpresaID: cotizacion.EmpresaID,
@@ -55,17 +59,21 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
               Direccion: cotizacion.EmpresaDireccion,
               Telefono: cotizacion.EmpresaTelefono,
               CorreoElectronico: cotizacion.EmpresaEmail,
-              PaginaWeb: cotizacion.EmpresaWeb
+              PaginaWeb: cotizacion.EmpresaWeb,
+              NIT: cotizacion.NIT,
+              NRC: cotizacion.NRC
             }
           };
           
           setOrderData(formattedData);
           setLoading(false);
-        })
-        .catch(err => {
-          console.error(err);
+        } catch (err) {
+          console.error('ERROR en fetchData:', err);
           setLoading(false);
-        });
+        }
+      };
+      
+      fetchData();
     }
   }, [show, orderId]);
 

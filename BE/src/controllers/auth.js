@@ -15,8 +15,8 @@ export const getSellerTypes = async (req, res) => {
 
 // --- FUNCIÓN EDITADA ---
 export const register = async (req, res) => {
-  // 1. Recibimos tipoVendedorId en lugar de ignorarlo
   const { username, password, rolId, email, tipoVendedorId } = req.body;
+  const firmaFile = req.file; // Imagen de firma/sello desde multer
 
   if (!username || !password || !rolId) {
     return res.status(400).json({ message: "Por favor envíe username, password y rolId" });
@@ -29,15 +29,20 @@ export const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
 
-    // 2. Insertar usando TipoVendedorID
-    const result = await pool.request()
+    const request = pool.request()
       .input("username", sql.NVarChar, username)
       .input("email", sql.NVarChar, email)
       .input("passwordHash", sql.NVarChar, hash)
-      .input("tipoVendedorId", sql.Int, tipoVendedorId || null) // Guardamos el ID
-      .input("rolId", sql.Int, rolId)
-      // Cambiamos la query para insertar en la columna de ID
-      .query("INSERT INTO Usuarios (Username, PasswordHash, CorreoElectronico, TipoVendedorID, RolID) VALUES (@username, @passwordHash, @email, @tipoVendedorId, @rolId)");
+      .input("tipoVendedorId", sql.Int, tipoVendedorId || null)
+      .input("rolId", sql.Int, rolId);
+
+    // Si hay imagen de firma, agregarla
+    if (firmaFile) {
+      request.input("firmaSello", sql.VarBinary, firmaFile.buffer);
+      await request.query("INSERT INTO Usuarios (Username, PasswordHash, CorreoElectronico, TipoVendedorID, RolID, FirmaSello) VALUES (@username, @passwordHash, @email, @tipoVendedorId, @rolId, @firmaSello)");
+    } else {
+      await request.query("INSERT INTO Usuarios (Username, PasswordHash, CorreoElectronico, TipoVendedorID, RolID) VALUES (@username, @passwordHash, @email, @tipoVendedorId, @rolId)");
+    }
 
     res.status(201).json({ message: "Usuario creado exitosamente" });
 
@@ -183,11 +188,11 @@ export const getUserById = async (req, res) => {
 // Actualizar usuario
 export const updateUser = async (req, res) => {
   const { username, email, rolId, tipoVendedorId, password } = req.body;
+  const firmaFile = req.file; // Imagen de firma/sello desde multer
   
   try {
     const pool = await getConnection();
     
-    // Si se proporciona nueva contraseña, encriptarla
     let updateQuery = `
       UPDATE Usuarios 
       SET Username = @username, 
@@ -208,6 +213,12 @@ export const updateUser = async (req, res) => {
       const hash = await bcrypt.hash(password, salt);
       request.input("passwordHash", sql.NVarChar, hash);
       updateQuery += `, PasswordHash = @passwordHash`;
+    }
+
+    // Si hay imagen de firma, agregarla
+    if (firmaFile) {
+      request.input("firmaSello", sql.VarBinary, firmaFile.buffer);
+      updateQuery += `, FirmaSello = @firmaSello`;
     }
     
     updateQuery += ` WHERE UsuarioID = @id`;
@@ -262,6 +273,60 @@ export const getRoles = async (req, res) => {
   try {
     const pool = await getConnection();
     const result = await pool.request().query('SELECT * FROM Roles');
+    res.json(result.recordset);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Obtener firma/sello de un usuario
+export const getUserSignature = async (req, res) => {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input("id", sql.Int, req.params.id)
+      .query("SELECT FirmaSello FROM Usuarios WHERE UsuarioID = @id");
+    
+    if (result.recordset.length === 0 || !result.recordset[0].FirmaSello) {
+      return res.status(404).json({ message: "Firma no encontrada" });
+    }
+    
+    const imageBuffer = result.recordset[0].FirmaSello;
+    
+    // Detectar tipo de imagen por los primeros bytes
+    let contentType = 'image/png';
+    if (imageBuffer[0] === 0xFF && imageBuffer[1] === 0xD8) {
+      contentType = 'image/jpeg';
+    } else if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) {
+      contentType = 'image/png';
+    } else if (imageBuffer[0] === 0x47 && imageBuffer[1] === 0x49) {
+      contentType = 'image/gif';
+    }
+    
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'no-cache');
+    res.send(imageBuffer);
+  } catch (error) {
+    console.error('Error al obtener firma:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Obtener lista de usuarios vendedores (para combobox en cotizaciones)
+export const getSellers = async (req, res) => {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request().query(`
+      SELECT 
+        u.UsuarioID, 
+        u.Username,
+        r.NombreRol,
+        tv.Nombre as TipoVendedor
+      FROM Usuarios u
+      INNER JOIN Roles r ON u.RolID = r.RolID
+      LEFT JOIN TiposVendedor tv ON u.TipoVendedorID = tv.TipoVendedorID
+      ORDER BY u.Username
+    `);
     res.json(result.recordset);
   } catch (error) {
     res.status(500).json({ message: error.message });

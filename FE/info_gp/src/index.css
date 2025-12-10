@@ -106,3 +106,21 @@ body {
   page-break-inside: avoid;
   break-inside: avoid;
 }
+
+/* Estilos específicos para OrderPDF */
+@media print {
+  .order-pdf-table td {
+    padding: 8px !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    color: black !important;
+    font-size: 12px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .order-pdf-table td * {
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: black !important;
+  }
+}

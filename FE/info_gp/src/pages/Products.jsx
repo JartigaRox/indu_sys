@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Card, Table, Button, Container, Spinner, Badge, Form, InputGroup } from 'react-bootstrap';
-import { Plus, Package, Edit, Trash2, Search, FileSpreadsheet, Download } from 'lucide-react';
+import { Plus, Package, Edit, Trash2, Search, FileSpreadsheet, Download, Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
@@ -31,17 +31,24 @@ const Products = () => {
 
   useEffect(() => { fetchProducts(); }, []);
 
+  // Función para normalizar texto (eliminar tildes)
+  const normalizeText = (text) => {
+    if (!text) return '';
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  };
+
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredProducts(products);
       return;
     }
-    const term = searchTerm.toLowerCase();
+    const normalizedTerm = normalizeText(searchTerm);
     const filtered = products.filter(p => 
-      p.CodigoProducto?.toLowerCase().includes(term) ||
-      p.Nombre?.toLowerCase().includes(term) ||
-      p.Categoria?.toLowerCase().includes(term) ||
-      p.Subcategoria?.toLowerCase().includes(term)
+      normalizeText(p.CodigoProducto).includes(normalizedTerm) ||
+      normalizeText(p.Nombre).includes(normalizedTerm) ||
+      normalizeText(p.Descripcion).includes(normalizedTerm) ||
+      normalizeText(p.Categoria).includes(normalizedTerm) ||
+      normalizeText(p.Subcategoria).includes(normalizedTerm)
     );
     setFilteredProducts(filtered);
   }, [searchTerm, products]);
@@ -110,6 +117,30 @@ const Products = () => {
     Swal.fire('Exportado', `${products.length} productos exportados correctamente`, 'success');
   };
 
+  const handleCopy = (product) => {
+    Swal.fire({
+      title: 'Copiar Producto',
+      text: `¿Deseas crear una copia de "${product.Nombre}"?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#003366',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, copiar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Crear una copia del producto sin el ID para que se cree como nuevo
+        const productCopy = {
+          ...product,
+          Nombre: `${product.Nombre} (Copia)`,
+          CodigoProducto: undefined // Se generará automáticamente
+        };
+        setSelectedProduct(productCopy);
+        setShowCreateModal(true);
+      }
+    });
+  };
+
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -144,7 +175,7 @@ const Products = () => {
             </InputGroup.Text>
             <Form.Control
               type="text"
-              placeholder="Buscar por código, nombre, categoría o subcategoría..."
+              placeholder="Buscar por código, nombre, descripción, categoría o subcategoría..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="border-start-0 ps-0"
@@ -207,15 +238,24 @@ const Products = () => {
                     <td className="text-end pe-4">
                         <Button 
                             variant="link" 
+                            className="text-success p-0 me-3" 
+                            onClick={() => handleCopy(p)}
+                            title="Copiar producto"
+                        >
+                            <Copy size={18} />
+                        </Button>
+                        <Button 
+                            variant="link" 
                             className="text-inst-blue p-0 me-3" 
                             onClick={() => {
                                 setSelectedProduct(p);
                                 setShowEditModal(true);
                             }}
+                            title="Editar producto"
                         >
                             <Edit size={18} />
                         </Button>
-                        <Button variant="link" className="text-danger p-0" onClick={() => handleDelete(p.ProductoID)}>
+                        <Button variant="link" className="text-danger p-0" onClick={() => handleDelete(p.ProductoID)} title="Eliminar producto">
                             <Trash2 size={18} />
                         </Button>
                     </td>
@@ -231,9 +271,14 @@ const Products = () => {
 
       <CreateProductModal
         show={showCreateModal}
-        onHide={() => setShowCreateModal(false)}
+        onHide={() => {
+          setShowCreateModal(false);
+          setSelectedProduct(null);
+        }}
+        initialData={selectedProduct}
         onSuccess={() => {
           fetchProducts();
+          setSelectedProduct(null);
         }}
       />
 

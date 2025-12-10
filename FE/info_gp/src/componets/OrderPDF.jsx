@@ -10,74 +10,128 @@ const OrderPDF = forwardRef(({ data }, ref) => {
     ElaboradoPor, EjecutivoVenta, items, empresa 
   } = data;
 
+  const cellStyle = {
+    border: '2px solid black',
+    padding: '8px',
+    verticalAlign: 'middle',
+    textAlign: 'center'
+  };
+
   return (
     <div ref={ref} className="p-5 bg-white text-dark" style={{ width: '100%', minHeight: '100%', fontSize: '12px', fontFamily: 'Arial, sans-serif' }}>
-      
-      {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-start mb-4 border-bottom pb-3">
-        <div>
-            {/* Logo de la empresa (si existe ID de empresa en la orden o cotización) */}
-            {/* Nota: Asegúrate de pasar el ID de la empresa en 'data' si lo necesitas dinámico */}
-            <h2 className="fw-bold text-uppercase mb-0">ORDEN DE TRABAJO</h2>
-            <div className="small text-secondary mt-1">
-                <strong>{empresa?.Nombre || 'Don Bosco'}</strong><br/>
-                {empresa?.Direccion}
-            </div>
-        </div>
-        <div className="text-end">
-            <div className="border rounded p-2 bg-light">
-                <h5 className="fw-bold m-0">#{NumeroCotizacion}</h5>
-                <small className="text-muted">Referencia</small>
-            </div>
-            <div className="mt-2 small">
-                <strong>Fecha Entrega:</strong> {new Date(FechaEntrega).toLocaleDateString()}
-            </div>
-        </div>
-      </div>
 
-      {/* INFO GENERAL */}
-      <div className="row mb-4">
-        <div className="col-6">
-            <h6 className="fw-bold bg-secondary text-white p-1 ps-2 rounded-top mb-0">CLIENTE</h6>
-            <div className="border rounded-bottom p-2">
-                <p className="mb-1 fs-6 fw-bold">{NombreCliente}</p>
-                <p className="mb-0 text-muted">Aprobado el: {new Date(FechaAprobacion).toLocaleDateString()}</p>
-            </div>
-        </div>
-        <div className="col-6">
-            <h6 className="fw-bold bg-secondary text-white p-1 ps-2 rounded-top mb-0">RESPONSABLES</h6>
-            <div className="border rounded-bottom p-2">
-                <p className="mb-1"><strong>Ejecutivo Venta:</strong> {EjecutivoVenta}</p>
-                <p className="mb-0"><strong>Elaborado Por:</strong> {ElaboradoPor}</p>
-            </div>
-        </div>
-      </div>
-
-      {/* TABLA DE PRODUCTOS (Resumen para Taller/Entrega) */}
-      <table className="table table-bordered mb-5">
-        <thead className="table-light">
-            <tr>
-                <th className="text-center" style={{width: '60px'}}>CANT</th>
-                <th>DESCRIPCIÓN DEL PRODUCTO</th>
-                <th className="text-center" style={{width: '100px'}}>VERIFICACIÓN</th>
-            </tr>
-        </thead>
+      {/* TABLA DE INFORMACIÓN PRINCIPAL */}
+      <table className="table table-bordered order-pdf-table mb-4" style={{ border: '2px solid black', width: '100%' }}>
         <tbody>
-            {items?.map((item, i) => (
-                <tr key={i}>
-                    <td className="text-center fw-bold fs-5 align-middle">{item.Cantidad || item.cantidad}</td>
-                    <td className="align-middle">
-                        <span className="fw-bold d-block">{item.NombreProducto || item.nombre}</span>
-                        <span className="small text-muted">{item.CodigoProducto || item.codigo}</span>
-                        <p className="mt-2">{item.Descripcion || item.descripcion}</p>
-                    </td>
-                    <td className="text-center align-middle">
-                        <div style={{width: '20px', height: '20px', border: '2px solid #ccc', margin: '0 auto'}}></div>
-                    </td>
-                </tr>
-            ))}
+          <tr style={{ height: '50px' }}>
+            <td className="fw-bold" style={{ ...cellStyle, width: '25%' }}>FECHA DE ORDEN DE INICIO</td>
+            <td style={{ ...cellStyle, width: '25%' }}>{new Date().toLocaleDateString()}</td>
+            <td className="fw-bold" style={{ ...cellStyle, width: '25%' }}>ÁREA</td>
+            <td className="fw-bold" style={{ ...cellStyle, width: '25%' }}>FIRMA</td>
+          </tr>
+          <tr style={{ height: '50px' }}>
+            <td colSpan="2" className="fw-bold" style={{ ...cellStyle, backgroundColor: '#F7DD6F' }}>CLIENTE</td>
+            <td className="fw-bold" style={cellStyle}>LAMINA Y ACERO INOXIDABLE</td>
+            <td style={cellStyle}></td>
+          </tr>
+          <tr style={{ height: '50px' }}>
+            <td colSpan="2" style={{ ...cellStyle, backgroundColor: '#F7DD6F' }}>{NombreCliente}</td>
+            <td className="fw-bold" style={cellStyle}>ESTRUCTURA Y PINTURA</td>
+            <td style={cellStyle}></td>
+          </tr>
+          <tr style={{ height: '50px' }}>
+            <td className="fw-bold" style={cellStyle}>FECHA DE ENTREGA</td>
+            <td style={cellStyle}>{FechaEntrega ? new Date(FechaEntrega).toLocaleDateString() : 'N/A'}</td>
+            <td className="fw-bold" style={cellStyle}>CARPINTERIA</td>
+            <td style={cellStyle}></td>
+          </tr>
+          <tr style={{ height: '50px' }}>
+            <td className="fw-bold" style={cellStyle}>ELABORADO POR</td>
+            <td style={cellStyle}>{ElaboradoPor || 'N/A'}</td>
+            <td className="fw-bold" style={cellStyle}>ARMADO</td>
+            <td style={cellStyle}></td>
+          </tr>
+          <tr style={{ height: '50px' }}>
+            <td className="fw-bold" style={cellStyle}>EJECUTIVO DE VENTAS</td>
+            <td style={cellStyle}>{EjecutivoVenta || 'N/A'}</td>
+            <td className="fw-bold" style={cellStyle}>LOGISTICA</td>
+            <td style={cellStyle}></td>
+          </tr>
+          <tr style={{ height: '50px' }}>
+            <td colSpan="2" style={cellStyle}></td>
+            <td className="fw-bold" style={cellStyle}>BODEGA Y SEGURIDAD INDUSTRIAL</td>
+            <td style={cellStyle}></td>
+          </tr>
         </tbody>
       </table>
+
+      {/* TABLA DE PRODUCTOS (mismo diseño que cotización pero sin precios) */}
+      {items?.map((item, i) => (
+        <table key={i} className="w-100 mb-4" style={{ border: '2px solid black', borderCollapse: 'collapse', pageBreakInside: 'avoid' }}>
+          <tbody>
+            {/* Fila 1: Headers con CAN, CÓDIGO, NOMBRE ÍTEM */}
+            <tr>
+              <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '8%', padding: '8px', fontSize: '11px' }}>
+                CAN
+              </td>
+              <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '15%', padding: '8px', fontSize: '11px' }}>
+                CÓDIGO
+              </td>
+              <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '37%', padding: '8px', fontSize: '11px' }}>
+                NOMBRE ÍTEM
+              </td>
+              <td rowSpan="3" className="text-center align-middle" style={{ border: '1px solid black', width: '40%', padding: '8px' }}>
+                {(item.ImagenURL || item.imagenURL) ? (
+                  <img 
+                    src={`http://localhost:5000/api/products/image/${item.ProductoID || item.productoId}`}
+                    alt={item.NombreProducto || item.nombre} 
+                    style={{ 
+                      width: '100%',
+                      maxWidth: '200px',
+                      height: 'auto',
+                      maxHeight: '200px',
+                      objectFit: 'contain'
+                    }}
+                    onError={(e) => e.target.src = 'https://via.placeholder.com/200?text=IMG'}
+                  />
+                ) : (
+                  <div className="text-muted" style={{ fontSize: '11px' }}>N/A</div>
+                )}
+              </td>
+            </tr>
+            
+            {/* Fila 2: Valores de CAN, CÓDIGO, NOMBRE */}
+            <tr>
+              <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
+                {item.Cantidad || item.cantidad}
+              </td>
+              <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
+                {item.CodigoProducto || item.codigo || 'N/A'}
+              </td>
+              <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
+                {item.NombreProducto || item.nombre || 'N/A'}
+              </td>
+            </tr>
+            
+            {/* Fila 3: Descripciones (bullets) - SIN FILA DE PRECIOS */}
+            <tr>
+              <td colSpan="3" className="align-top" style={{ border: '1px solid black', padding: '12px' }}>
+                {(item.Descripcion || item.descripcion) ? (
+                  <ul className="mb-0 ps-3" style={{ fontSize: '10px', lineHeight: '1.4', textTransform: 'uppercase' }}>
+                    {(item.Descripcion || item.descripcion).split('\n').filter(line => line.trim()).map((line, idx) => (
+                      <li key={idx}>{line.trim().toUpperCase()}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <ul className="mb-0 ps-3" style={{ fontSize: '10px' }}>
+                    <li>SIN DESCRIPCIÓN</li>
+                  </ul>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      ))}
 
       {/* FIRMAS (Al final de la hoja) */}
       <div className="fixed-bottom position-absolute w-100 px-5" style={{ bottom: '50px' }}>

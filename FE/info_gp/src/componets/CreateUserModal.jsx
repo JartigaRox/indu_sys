@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Alert } from 'react-bootstrap';
-import { Shield, User, Mail, Briefcase, Lock } from 'lucide-react';
+import { Shield, User, Mail, Briefcase, Lock, FileImage } from 'lucide-react';
 import api from '../api/axios';
 import Swal from 'sweetalert2';
 
@@ -11,6 +11,8 @@ const CreateUserModal = ({ show, onHide, onSave }) => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [rolId, setRolId] = useState('2'); // Operador por defecto
     const [tipoVendedorId, setTipoVendedorId] = useState('');
+    const [firmaFile, setFirmaFile] = useState(null);
+    const [firmaPreview, setFirmaPreview] = useState(null);
     
     const [allSellerTypes, setAllSellerTypes] = useState([]);
     const [filteredTypes, setFilteredTypes] = useState([]);
@@ -27,6 +29,8 @@ const CreateUserModal = ({ show, onHide, onSave }) => {
             setConfirmPassword('');
             setRolId('2');
             setTipoVendedorId('');
+            setFirmaFile(null);
+            setFirmaPreview(null);
             setError(null);
         }
     }, [show]);
@@ -53,6 +57,18 @@ const CreateUserModal = ({ show, onHide, onSave }) => {
         }
     };
 
+    const handleFirmaChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setFirmaFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFirmaPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -70,15 +86,19 @@ const CreateUserModal = ({ show, onHide, onSave }) => {
         }
 
         try {
-            const payload = {
-                username,
-                email,
-                password,
-                rolId: parseInt(rolId),
-                tipoVendedorId: parseInt(tipoVendedorId)
-            };
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('email', email);
+            formData.append('password', password);
+            formData.append('rolId', rolId);
+            formData.append('tipoVendedorId', tipoVendedorId);
+            if (firmaFile) {
+                formData.append('firma', firmaFile);
+            }
 
-            await api.post('/auth/register', payload);
+            await api.post('/auth/register', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             Swal.fire('Éxito', `Usuario "${username}" creado correctamente`, 'success');
             onSave();
             onHide();
@@ -177,6 +197,34 @@ const CreateUserModal = ({ show, onHide, onSave }) => {
                                 ))}
                             </Form.Select>
                         </div>
+                    </Form.Group>
+
+                    {/* FIRMA Y SELLO */}
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-bold text-secondary">Firma y Sello (Imagen)</Form.Label>
+                        <div className="input-group">
+                            <span className="input-group-text bg-light border-end-0">
+                                <FileImage size={18} className="text-muted" />
+                            </span>
+                            <Form.Control 
+                                type="file" 
+                                accept="image/*"
+                                onChange={handleFirmaChange}
+                                className="border-start-0" 
+                            />
+                        </div>
+                        <Form.Text className="text-muted">
+                            Sube una imagen de la firma y sello para las cotizaciones
+                        </Form.Text>
+                        {firmaPreview && (
+                            <div className="mt-3 text-center">
+                                <img 
+                                    src={firmaPreview} 
+                                    alt="Vista previa" 
+                                    style={{ maxWidth: '200px', maxHeight: '100px', border: '1px solid #ddd', padding: '5px' }}
+                                />
+                            </div>
+                        )}
                     </Form.Group>
 
                     <hr className="my-4" />

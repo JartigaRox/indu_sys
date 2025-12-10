@@ -63,7 +63,9 @@ export const getProducts = async (req, res) => {
         const result = await pool.request().query(`
             SELECT 
                 p.ProductoID, p.CodigoProducto, p.Nombre, p.Descripcion,
-                s.Nombre as Subcategoria, c.Nombre as Categoria,
+                p.SubcategoriaID, p.TipoMuebleID, p.EstadoProductoID,
+                s.Nombre as Subcategoria, s.CategoriaID,
+                c.Nombre as Categoria,
                 tm.Tipo as TipoMueble, ep.Estado as EstadoProducto
             FROM Productos p
             LEFT JOIN Subcategorias s ON p.SubcategoriaID = s.SubcategoriaID

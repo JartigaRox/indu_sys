@@ -61,16 +61,53 @@ const Orders = () => {
   }, [searchTerm, orders]);
 
   // Preparar datos para imprimir (Carga detalles completos)
-  const preparePrint = async (orderId) => {
+  const preparePrint = async (cotizacionId) => {
     try {
-        const res = await api.get(`/orders/${orderId}`); // Reutilizamos endpoint de detalle
-        // Combinamos datos
-        const fullData = { ...res.data, items: res.data.items, empresa: res.data.EmpresaID ? { Nombre: res.data.EmpresaNombre, Direccion: res.data.EmpresaDireccion } : {} };
+        // Primero, necesitamos obtener el OrdenID desde la cotización
+        const ordersRes = await api.get('/orders');
+        const order = ordersRes.data.find(o => o.CotizacionID === cotizacionId);
+        
+        if (!order) {
+          console.error('No se encontró la orden para la cotización:', cotizacionId);
+          return;
+        }
+        
+        // Obtener datos completos de la orden
+        const resOrder = await api.get(`/orders/full/${order.OrdenID}`);
+        const orderData = resOrder.data;
+        
+        // Obtener datos de la cotización
+        const resCotizacion = await api.get(`/orders/${cotizacionId}`);
+        const cotizacion = resCotizacion.data;
+        
+        // Obtener datos completos de la cotización para vendedor
+        const resQuotationFull = await api.get(`/quotations/${cotizacionId}`);
+        const quotationFull = resQuotationFull.data;
+        
+        // Combinar todos los datos
+        const fullData = {
+          NumeroCotizacion: cotizacion.NumeroCotizacion,
+          NombreCliente: cotizacion.NombreCliente,
+          FechaEntrega: orderData.FechaEntrega || quotationFull.FechaEntregaEstimada,
+          ElaboradoPor: orderData.UsuarioModificacion || quotationFull.NombreQuienCotiza || 'N/A',
+          EjecutivoVenta: quotationFull.VendedorUsername || quotationFull.NombreQuienCotiza || 'N/A',
+          items: cotizacion.items || [],
+          empresa: {
+            EmpresaID: cotizacion.EmpresaID,
+            Nombre: cotizacion.EmpresaNombre,
+            Direccion: cotizacion.EmpresaDireccion,
+            Telefono: cotizacion.EmpresaTelefono,
+            CorreoElectronico: cotizacion.EmpresaEmail,
+            PaginaWeb: cotizacion.EmpresaWeb,
+            NIT: cotizacion.NIT,
+            NRC: cotizacion.NRC
+          }
+        };
         
         setSelectedOrderForPdf(fullData);
-        setTimeout(() => handlePrint(), 200); // Pequeño delay para renderizar
+        setTimeout(() => handlePrint(), 200);
     } catch (error) {
-        console.error(error);
+        console.error('Error en preparePrint:', error);
     }
   };
 

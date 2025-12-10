@@ -5,6 +5,7 @@ import { useReactToPrint } from 'react-to-print';
 import api from '../api/axios';
 import QuotationPDF from './QuotationPDF';
 import OrderFormModal from './OrderFormModal';
+import Swal from 'sweetalert2';
 
 const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
   const [quoteData, setQuoteData] = useState(null);
@@ -24,6 +25,7 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
       api.get(`/quotations/${quoteId}`)
         .then(res => {
             const data = res.data;
+            
             const formattedData = {
                 cliente: {
                     NombreCliente: data.NombreCliente,
@@ -48,6 +50,10 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
                 CotizacionID: data.CotizacionID,
                 estado: data.Estado,
                 usuarioDecision: data.UsuarioDecision,
+                vendedor: data.VendedorID ? {
+                    UsuarioID: data.VendedorID,
+                    Username: data.VendedorUsername || data.NombreQuienCotiza
+                } : null,
                 empresa: {
                     EmpresaID: data.EmpresaID,
                     Nombre: data.EmpresaNombre,
@@ -73,13 +79,30 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
         onHide();
         setShowOrderForm(true);
     } else {
-        if (window.confirm('¿Confirmar rechazo de la cotización?')) {
+        const result = await Swal.fire({
+            title: '¿Rechazar Cotización?',
+            text: '¿Estás seguro de rechazar esta cotización?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, rechazar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
             try {
                 await api.patch(`/quotations/${quoteId}/status`, { status: 'Rechazada' });
+                await Swal.fire({
+                    title: 'Rechazada',
+                    text: 'La cotización ha sido rechazada',
+                    icon: 'success',
+                    confirmButtonColor: '#003366'
+                });
                 onStatusChange();
                 onHide();
             } catch (error) {
-                console.error(error);
+                Swal.fire('Error', 'No se pudo rechazar la cotización', 'error');
             }
         }
     }

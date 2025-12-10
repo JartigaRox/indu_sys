@@ -218,14 +218,13 @@ const Dashboard = () => {
                                 <Eye size={18} />
                             </Button>
 
-                            {/* Botón Editar (Solo si está pendiente) */}
+                            {/* Botón Editar */}
                             <Button 
                                 variant="outline-secondary" 
                                 size="sm"
                                 className="d-flex align-items-center gap-1 border-0 bg-light text-secondary"
                                 onClick={() => navigate(`/cotizaciones/editar/${q.CotizacionID}`)}
                                 title="Editar"
-                                enabled={q.Estado !== 'Pendiente'}
                             >
                                 <Edit size={18} />
                             </Button>

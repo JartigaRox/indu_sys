@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
+import { FileImage } from 'lucide-react';
 import api from '../api/axios';
 import Swal from 'sweetalert2';
 
@@ -12,6 +13,8 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
         password: '',
         confirmPassword: ''
     });
+    const [firmaFile, setFirmaFile] = useState(null);
+    const [firmaPreview, setFirmaPreview] = useState(null);
     const [roles, setRoles] = useState([]);
     const [sellerTypes, setSellerTypes] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -52,6 +55,18 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
         });
     };
 
+    const handleFirmaChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setFirmaFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFirmaPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -68,7 +83,21 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
 
         setLoading(true);
         try {
-            await api.put(`/auth/users/${user.UsuarioID}`, formData);
+            const submitData = new FormData();
+            submitData.append('username', formData.username);
+            submitData.append('email', formData.email);
+            submitData.append('rolId', formData.rolId);
+            submitData.append('tipoVendedorId', formData.tipoVendedorId);
+            if (formData.password) {
+                submitData.append('password', formData.password);
+            }
+            if (firmaFile) {
+                submitData.append('firma', firmaFile);
+            }
+
+            await api.put(`/auth/users/${user.UsuarioID}`, submitData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             Swal.fire('Éxito', 'Usuario actualizado correctamente', 'success');
             onSave();
             onHide();
@@ -149,6 +178,54 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
                             </Form.Group>
                         </Col>
                     </Row>
+
+                    {/* FIRMA Y SELLO */}
+                    <Form.Group className="mb-3">
+                        <Form.Label>Firma y Sello (Imagen)</Form.Label>
+                        <div className="input-group">
+                            <span className="input-group-text bg-light border-end-0">
+                                <FileImage size={18} className="text-muted" />
+                            </span>
+                            <Form.Control 
+                                type="file" 
+                                accept="image/*"
+                                onChange={handleFirmaChange}
+                                className="border-start-0" 
+                            />
+                        </div>
+                        <Form.Text className="text-muted">
+                            Sube una nueva imagen para reemplazar la firma actual
+                        </Form.Text>
+                        <div className="mt-3">
+                            {firmaPreview ? (
+                                <div className="text-center">
+                                    <p className="text-muted small mb-2">Nueva firma:</p>
+                                    <img 
+                                        src={firmaPreview} 
+                                        alt="Nueva firma" 
+                                        style={{ maxWidth: '200px', maxHeight: '100px', border: '1px solid #ddd', padding: '5px' }}
+                                    />
+                                </div>
+                            ) : user?.UsuarioID ? (
+                                <div className="text-center">
+                                    <p className="text-muted small mb-2">Firma actual:</p>
+                                    <img 
+                                        src={`http://localhost:5000/api/auth/users/${user.UsuarioID}/signature?t=${Date.now()}`}
+                                        alt="Firma actual" 
+                                        style={{ maxWidth: '200px', maxHeight: '100px', border: '1px solid #ddd', padding: '5px' }}
+                                        onError={(e) => { 
+                                            e.target.style.display = 'none'; 
+                                            const errorMsg = e.target.nextElementSibling;
+                                            if (errorMsg) errorMsg.style.display = 'block';
+                                        }}
+                                    />
+                                    <p className="text-muted small" style={{ display: 'none' }}>Sin firma registrada</p>
+                                </div>
+                            ) : null}
+                        </div>
+                    </Form.Group>
+
+                    <hr className="my-3" />
 
                     <Row>
                         <Col md={6}>

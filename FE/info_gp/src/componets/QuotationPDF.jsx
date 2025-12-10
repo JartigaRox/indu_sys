@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useMemo } from 'react';
 import { FaMapMarkerAlt, FaPhoneAlt, FaWhatsapp, FaEnvelope, FaGlobe } from 'react-icons/fa';
 
 const API_URL = "http://localhost:5000/api";
@@ -9,6 +9,9 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   const { cliente, items, user, numeroCotizacion, fecha, empresa } = data;
   const total = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
   const mainColor = empresa.EmpresaID === 1 ? '#005689' : '#D4AF37';
+  
+  // Generar timestamp único cuando cambia el vendedor
+  const imageTimestamp = useMemo(() => Date.now(), [data.vendedor?.UsuarioID]);
 
   // --- COMPONENTES INTERNOS ---
   const HeaderStyleA = () => (
@@ -34,14 +37,40 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   );
 
   const HeaderStyleB = () => (
-    <div className="mb-4 text-center">
-       {/* ... Tu diseño para empresa 2 ... */}
-       <h2 style={{color: mainColor}}>{empresa.Nombre}</h2>
+    <div className="d-flex justify-content-between align-items-start pb-2 mb-3" style={{ borderBottom: '2px solid #D4AF37' }}>
+      <div className="d-flex flex-column">
+        <div className="d-flex align-items-center mb-2">
+          <div>
+            <img 
+              src="../../src/assets/PoligL.png" 
+              alt="Logo Info GP" 
+              style={{ width: '200px', height: 'auto', objectFit: 'contain' }} 
+            />
+          </div>
+        </div>
+        <h1 style={{ fontFamily: 'Times New Roman, serif', fontSize: '18px', color: '#222', margin: '0', textAlign: 'justify' }}>{empresa.Nombre}</h1>
+      </div>
+      <div className="text-end">
+        <h2 className="fw-bold m-0" style={{ color: '#D4AF37', fontSize: '24px' }}>COTIZACIÓN</h2>
+        <div className="fw-bold text-secondary fs-5"># {numeroCotizacion}</div>
+      </div>
     </div>
   );
 
   const FooterStyleA = () => (
     <div className="pt-2 border-top w-100" style={{ borderColor: '#005689', borderWidth: '3px' }}>
+      <div className="d-flex flex-wrap justify-content-center gap-3 text-dark" style={{ fontSize: '10px' }}>
+         <div className="d-flex align-items-center text-nowrap"><FaMapMarkerAlt className="me-1"/> {empresa.Direccion}</div>
+         <div className="d-flex align-items-center"><FaPhoneAlt className="me-1"/> {empresa.Telefono}</div>
+         <div className="d-flex align-items-center"><FaWhatsapp className="me-1"/> {empresa.Celular}</div>
+         <div className="d-flex align-items-center"><FaEnvelope className="me-1"/> <span style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span></div>
+         <div className="d-flex align-items-center"><FaGlobe className="me-1"/> <span style={{textTransform:'lowercase'}}> {empresa.PaginaWeb}</span></div>
+      </div>
+    </div>
+  );
+
+  const FooterStyleB = () => (
+    <div className="pt-2 border-top w-100" style={{ borderColor: '#D4AF37', borderWidth: '3px' }}>
       <div className="d-flex flex-wrap justify-content-center gap-3 text-dark" style={{ fontSize: '10px' }}>
          <div className="d-flex align-items-center text-nowrap"><FaMapMarkerAlt className="me-1"/> {empresa.Direccion}</div>
          <div className="d-flex align-items-center"><FaPhoneAlt className="me-1"/> {empresa.Telefono}</div>
@@ -78,7 +107,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
               <div className="content-wrapper px-2">
                 
                 {/* Info Cliente */}
-                <div className="row mb-4 avoid-break">
+                <div className="row mb-4 avoid-break" style={empresa.EmpresaID === 2 ? { marginTop: '-40px' } : {}}>
                   <div className="col-12"><h6 className="fw-bold border-bottom pb-1" style={{ color: mainColor, borderColor: mainColor }}>CLIENTE</h6></div>
                   <div className="col-8">
                     <p className="mb-0 text-muted small">Lourdes colón, {new Date(fecha).toLocaleDateString()}</p>
@@ -186,18 +215,19 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                 ))}
 
                 {/* --- SECCIÓN DE TOTALES Y DISCLAIMERS (AL FINAL) --- */}
-                {/* La clase 'avoid-break' intenta mantener este bloque unido */}
-                <div className="avoid-break mt-4">
-                    
-                    {/* Totales */}
+                
+                {/* Totales - puede quedarse en página anterior si cabe */}
+                <div className="mt-4">
                     <div className="d-flex justify-content-end mb-5">
-                        <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: '#008CB4', minWidth: '250px', display:'flex', justifyContent:'space-between', fontSize: '14px' }}>
+                        <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: mainColor, minWidth: '250px', display:'flex', justifyContent:'space-between', fontSize: '14px' }}>
                         <span>TOTAL DE LA COTIZACION:  </span>
                         <span> <strong>${total.toFixed(2)}</strong></span>
                         </div>
                     </div>
+                </div>
 
-                    {/* Disclaimers / Condiciones / Sellos */}
+                {/* Disclaimers / Condiciones / Sellos - se mantiene unido */}
+                <div className="avoid-break">
                     <div className="border rounded p-3 bg-light text-secondary" style={{ fontSize: '10px' }}>
                         <div className="row">
                             <div className="col-8">
@@ -218,9 +248,24 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                             
                             {/* Área de Sellos / Firmas */}
                             <div className="col-4 text-center d-flex flex-column justify-content-end align-items-center" style={{ height: '120px' }}>
+                                {data.vendedor?.UsuarioID ? (
+                                  <div className="mb-2" style={{ minHeight: '60px' }}>
+                                    <img 
+                                      src={`http://localhost:5000/api/auth/users/${data.vendedor.UsuarioID}/signature?t=${imageTimestamp}`}
+                                      alt="Firma"
+                                      style={{ maxWidth: '250px', maxHeight: '100px', objectFit: 'contain' }}
+                                      onError={(e) => { 
+                                        // Ocultar imagen si no tiene firma registrada
+                                        e.target.style.display = 'none'; 
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="mb-2" style={{ minHeight: '60px' }}></div>
+                                )}
                                 <div style={{ borderBottom: '1px solid #999', width: '80%', marginBottom: '5px' }}></div>
                                 <span className="fw-bold text-uppercase small">Firma y Sello Autorizado</span>
-                                <span className="small text-muted">{user.username}</span>
+                                <span className="small text-muted">{data.vendedor?.Username || user.username}</span>
                                 <span className="small text-muted">{empresa.Celular}</span>
                                 <span className="small text-muted" style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span>
                             </div>
@@ -249,11 +294,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
 
       {/* 4. FOOTER FIXED (Se muestra fijo en cada página sobre el footer-space) */}
       <div className="print-footer-fixed d-flex align-items-end justify-content-center pb-3">
-         {empresa.EmpresaID === 1 ? <FooterStyleA /> : (
-           <div className="text-center small text-muted border-top pt-2 w-100">
-              {empresa.Nombre} | {empresa.Telefono} 
-           </div>
-         )}
+         {empresa.EmpresaID === 1 ? <FooterStyleA /> : <FooterStyleB />}
       </div>
     </div>
   );

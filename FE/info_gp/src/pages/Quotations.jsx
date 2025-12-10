@@ -146,7 +146,7 @@ const Quotations = () => {
                     <td className="text-center pe-4">
                         <div className="d-flex justify-content-center gap-2">
                             <Button variant="outline-primary" size="sm" className="border-0 bg-light text-primary" onClick={() => handleOpenModal(q.CotizacionID)}><Eye size={18}/></Button>
-                            <Button variant="outline-secondary" size="sm" className="border-0 bg-light text-secondary" onClick={() => navigate(`/cotizaciones/editar/${q.CotizacionID}`)} enabled={q.Estado !== 'Pendiente'}><Edit size={18}/></Button>
+                            <Button variant="outline-secondary" size="sm" className="border-0 bg-light text-secondary" onClick={() => navigate(`/cotizaciones/editar/${q.CotizacionID}`)}><Edit size={18}/></Button>
                         </div>
                     </td>
                   </tr>

@@ -12,7 +12,8 @@ export const createQuote = async (req, res) => {
         atencionASnapshot, 
         direccionSnapshot, 
         items, // Array de productos
-        fechaEntrega // <--- NUEVO: Fecha estimada
+        fechaEntrega, // <--- NUEVO: Fecha estimada
+        vendedorId // <--- NUEVO: ID del vendedor seleccionado
     } = req.body;
 
     if (!clienteId || !items || items.length === 0) {
@@ -46,18 +47,19 @@ export const createQuote = async (req, res) => {
             .input("atencion", sql.NVarChar, atencionASnapshot)
             .input("dir", sql.NVarChar, direccionSnapshot)
             .input("total", sql.Decimal(18, 2), totalGeneral)
-            .input("fechaEntrega", sql.DateTime, fechaEntrega || null) // <--- Guardamos fecha entrega
+            .input("fechaEntrega", sql.DateTime, fechaEntrega || null)
+            .input("vendedorId", sql.Int, vendedorId || null) // <--- Guardamos vendedor
             .query(`
                 INSERT INTO Cotizaciones (
                     NumeroCotizacion, ClienteID, EmpresaID, NombreQuienCotiza, 
                     TelefonoSnapshot, AtencionASnapshot, DireccionSnapshot, 
-                    TotalCotizacion, Estado, FechaEntregaEstimada
+                    TotalCotizacion, Estado, FechaEntregaEstimada, VendedorID
                 )
                 OUTPUT INSERTED.CotizacionID
                 VALUES (
                     @numero, @clienteId, @empresaId, @nombreQuien, 
                     @tel, @atencion, @dir, 
-                    @total, 'Pendiente', @fechaEntrega
+                    @total, 'Pendiente', @fechaEntrega, @vendedorId
                 )
             `);
 
@@ -113,7 +115,7 @@ export const updateQuote = async (req, res) => {
 
         // 1. Actualizar Encabezado
         await transaction.request()
-            .input("id", sql.Int, id)
+            .input("id", sql.Int, parseInt(id))
             .input("clienteId", sql.Int, clienteId)
             .input("empresaId", sql.Int, empresaId)
             .input("nombreQuien", sql.NVarChar, nombreQuienCotiza)
@@ -137,13 +139,13 @@ export const updateQuote = async (req, res) => {
 
         // 2. Borrar productos viejos
         await transaction.request()
-            .input("id", sql.Int, id)
+            .input("id", sql.Int, parseInt(id))
             .query("DELETE FROM DetalleCotizaciones WHERE CotizacionID = @id");
 
         // 3. Insertar productos nuevos
         for (const item of items) {
             await transaction.request()
-                .input("cotId", sql.Int, id)
+                .input("cotId", sql.Int, parseInt(id))
                 .input("prodId", sql.Int, item.productoId)
                 .input("cant", sql.Int, item.cantidad)
                 .input("precio", sql.Decimal(18, 2), item.precio)
@@ -193,13 +195,27 @@ export const getQuoteById = async (req, res) => {
     try {
         const pool = await getConnection();
         
-        // Consulta Maestra (Encabezado + Cliente + Ubicación + Empresa)
+        // Consulta Maestra (Encabezado + Cliente + Ubicación + Empresa + Vendedor)
         const header = await pool.request()
-            .input("id", sql.Int, id)
+            .input("id", sql.Int, parseInt(id))
             .query(`
                 SELECT 
-                    c.*, 
+                    c.CotizacionID,
+                    c.NumeroCotizacion,
+                    c.FechaRealizacion,
+                    c.ClienteID,
+                    c.EmpresaID,
+                    c.NombreQuienCotiza,
+                    c.TelefonoSnapshot,
+                    c.AtencionASnapshot,
+                    c.DireccionSnapshot,
+                    c.TotalCotizacion,
+                    c.Estado,
+                    c.FechaEntregaEstimada,
+                    c.UsuarioDecision,
                     cli.NombreCliente, cli.CorreoElectronico, 
+                    cli.Telefono, cli.AtencionA, cli.DireccionCalle,
+                    d.Nombre as Distrito,
                     m.Nombre as Municipio, dep.Nombre as Departamento,
                     
                     -- DATOS EMPRESA (Para el PDF)
@@ -210,19 +226,24 @@ export const getQuoteById = async (req, res) => {
                     e.Telefono as TelefonoEmpresa,
                     e.Celular as CelularEmpresa,
                     e.CorreoElectronico as EmailEmpresa,
-                    e.PaginaWeb as WebEmpresa
+                    e.PaginaWeb as WebEmpresa,
+                    
+                    -- DATOS VENDEDOR (Para firma y sello)
+                    c.VendedorID,
+                    v.Username as VendedorUsername
                 FROM Cotizaciones c
                 INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
                 LEFT JOIN Distritos d ON cli.DistritoID = d.DistritoID
                 LEFT JOIN Municipios m ON d.MunicipioID = m.MunicipioID
                 LEFT JOIN Departamentos dep ON m.DepartamentoID = dep.DepartamentoID
                 LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID
+                LEFT JOIN Usuarios v ON c.VendedorID = v.UsuarioID
                 WHERE c.CotizacionID = @id
             `);
 
         // Consulta Detalles
         const details = await pool.request()
-            .input("id", sql.Int, id)
+            .input("id", sql.Int, parseInt(id))
             .query(`
                 SELECT 
                     d.*, 

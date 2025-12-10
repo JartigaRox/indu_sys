@@ -23,6 +23,8 @@ const CreateQuotation = () => {
   const [clientOptions, setClientOptions] = useState([]);
   const [productOptions, setProductOptions] = useState([]); 
   const [companies, setCompanies] = useState([]);
+  const [sellers, setSellers] = useState([]);
+  const [selectedSeller, setSelectedSeller] = useState(null);
   const [nextId, setNextId] = useState(0);
   
   // Formulario Encabezado
@@ -52,7 +54,8 @@ const CreateQuotation = () => {
       numeroCotizacion: quoteNumber, 
       fecha: new Date(), 
       fechaEntrega,
-      empresa: companyData 
+      empresa: companyData,
+      vendedor: selectedSeller?.data || null
   };
 
   // --- CONFIGURACIÓN DE IMPRESIÓN (CAMBIO 2) ---
@@ -65,15 +68,30 @@ const CreateQuotation = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [resClients, resProducts, resNext, resCompanies] = await Promise.all([
+        const [resClients, resProducts, resNext, resCompanies, resSellers] = await Promise.all([
             api.get('/clients'),
             api.get('/products'),
             api.get('/quotations/next-number'),
-            api.get('/companies')
+            api.get('/companies'),
+            api.get('/auth/sellers')
         ]);
 
         setClients(resClients.data);
         setCompanies(resCompanies.data);
+        setSellers(resSellers.data);
+        
+        // Establecer el usuario actual como vendedor por defecto
+        const currentUserSeller = resSellers.data.find(s => 
+          s.Username === user?.username || s.UsuarioID === user?.id
+        );
+        
+        if (currentUserSeller) {
+          setSelectedSeller({
+            value: currentUserSeller.UsuarioID,
+            label: `${currentUserSeller.Username} (${currentUserSeller.NombreRol === 'sudo' ? 'Administrador' : 'Operador'})`,
+            data: currentUserSeller
+          });
+        }
         
         const clientOpts = resClients.data.map(c => ({
             value: c.ClienteID,
@@ -101,6 +119,18 @@ const CreateQuotation = () => {
             setSelectedClient(clientOpt || null);
             setSelectedCompanyId(q.EmpresaID);
             setFechaEntrega(q.FechaEntregaEstimada ? q.FechaEntregaEstimada.split('T')[0] : '');
+            
+            // Cargar vendedor si existe
+            if (q.VendedorID) {
+              const vendorData = resSellers.data.find(s => s.UsuarioID === q.VendedorID);
+              if (vendorData) {
+                setSelectedSeller({
+                  value: vendorData.UsuarioID,
+                  label: `${vendorData.Username} (${vendorData.NombreRol === 'sudo' ? 'Administrador' : 'Operador'})`,
+                  data: vendorData
+                });
+              }
+            }
             
             setItems(q.items.map(i => ({
                 productoId: i.ProductoID,
@@ -174,7 +204,8 @@ const CreateQuotation = () => {
         atencionASnapshot: clientData?.AtencionA,
         direccionSnapshot: clientData?.DireccionCalle,
         items: items.map(i => ({ productoId: i.productoId, cantidad: i.cantidad, precio: i.precio })),
-        fechaEntrega: fechaEntrega || null
+        fechaEntrega: fechaEntrega || null,
+        vendedorId: selectedSeller?.value || null
     };
 
     try {
@@ -244,6 +275,26 @@ const CreateQuotation = () => {
                 />
               </Form.Group>
 
+              <Form.Group className="mb-3">
+                <Form.Label className="small text-muted fw-bold">VENDEDOR / QUIEN COTIZA</Form.Label>
+                <Select 
+                  options={sellers.map(s => ({
+                    value: s.UsuarioID,
+                    label: `${s.Username} (${s.NombreRol === 'sudo' ? 'Administrador' : 'Operador'})`,
+                    data: s
+                  }))}
+                  value={selectedSeller} 
+                  onChange={setSelectedSeller} 
+                  placeholder="Seleccionar vendedor..." 
+                  isClearable
+                />
+                {selectedSeller && (
+                  <Form.Text className="text-muted">
+                    Tipo: {selectedSeller.data.TipoVendedor || 'No especificado'}
+                  </Form.Text>
+                )}
+              </Form.Group>
+
             </Card.Body>
           </Card>
 
@@ -309,7 +360,7 @@ const CreateQuotation = () => {
               {/* VISTA EN PANTALLA (ESCALADA) */}
               {/* Nota: NO le ponemos ref={printRef} a esto para evitar que se imprima pequeño */}
               <div className="shadow bg-white" style={{ width: '210mm', minHeight: '297mm', transform: 'scale(0.75)', transformOrigin: 'top center' }}>
-                  <QuotationPDF data={pdfData} />
+                  <QuotationPDF key={`preview-${selectedSeller?.value || 'none'}`} data={pdfData} />
               </div>
 
             </Card.Body>
@@ -321,7 +372,7 @@ const CreateQuotation = () => {
       {/* Este div está oculto en la pantalla, pero react-to-print tomará su contenido para generar el PDF a tamaño real */}
       <div style={{ display: 'none' }}>
         <div ref={printRef}>
-          <QuotationPDF data={pdfData} />
+          <QuotationPDF key={`print-${selectedSeller?.value || 'none'}`} data={pdfData} />
         </div>
       </div>
 
