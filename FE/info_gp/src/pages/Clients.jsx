@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Card, Table, Button, Container, Badge, Spinner, Alert, Form, InputGroup } from 'react-bootstrap';
-import { Plus, Users, MapPin, Phone, Search, FileSpreadsheet, Trash2 } from 'lucide-react';
+import { Plus, Users, MapPin, Phone, Search, FileSpreadsheet, Trash2, Download } from 'lucide-react';
 import Swal from 'sweetalert2';
+import * as XLSX from 'xlsx';
 import EditClientModal from '../componets/EditClientModal';
 import CreateClientModal from '../componets/CreateClientModal';
 import ImportClientsModal from '../componets/ImportClientsModal';
@@ -64,6 +65,52 @@ const Clients = () => {
         }
     };
 
+    // Exportar a Excel
+    const handleExportToExcel = () => {
+        if (clients.length === 0) {
+            Swal.fire('Sin datos', 'No hay clientes para exportar', 'info');
+            return;
+        }
+
+        // Preparar datos para exportar
+        const dataToExport = clients.map(c => ({
+            Código: c.CodigoCliente || '',
+            'Nombre o Razón Social': c.NombreCliente || '',
+            'Atención A': c.AtencionA || '',
+            Teléfono: c.Telefono || '',
+            Email: c.Email || '',
+            Dirección: c.Direccion || '',
+            Distrito: c.Distrito || '',
+            Municipio: c.Municipio || '',
+            Departamento: c.Departamento || ''
+        }));
+
+        // Crear hoja de Excel
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        
+        // Ajustar ancho de columnas
+        ws['!cols'] = [
+            { wch: 15 }, // Código
+            { wch: 35 }, // Nombre
+            { wch: 25 }, // Atención A
+            { wch: 15 }, // Teléfono
+            { wch: 30 }, // Email
+            { wch: 40 }, // Dirección
+            { wch: 20 }, // Distrito
+            { wch: 20 }, // Municipio
+            { wch: 20 }  // Departamento
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+        
+        // Generar archivo con fecha
+        const fecha = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(wb, `clientes_${fecha}.xlsx`);
+        
+        Swal.fire('Exportado', `${clients.length} clientes exportados correctamente`, 'success');
+    };
+
     // Filtrar clientes según el término de búsqueda
     useEffect(() => {
         if (!searchTerm.trim()) {
@@ -93,6 +140,13 @@ const Clients = () => {
                     <p className="text-muted small mb-0">Gestiona tus contactos comerciales</p>
                 </div>
                 <div className="d-flex gap-2">
+                    <Button
+                        variant="outline-primary"
+                        className="d-flex align-items-center gap-2"
+                        onClick={handleExportToExcel}
+                    >
+                        <Download size={18} /> Exportar a Excel
+                    </Button>
                     <Button
                         variant="outline-success"
                         className="d-flex align-items-center gap-2"
