@@ -46,7 +46,6 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
                 user: { username: data.NombreQuienCotiza || 'Vendedor' },
                 numeroCotizacion: data.NumeroCotizacion,
                 fecha: data.FechaRealizacion,
-                fechaEntrega: data.FechaEntregaEstimada,
                 CotizacionID: data.CotizacionID,
                 estado: data.Estado,
                 usuarioDecision: data.UsuarioDecision,

@@ -868,3 +868,12 @@ UPDATE Empresas SET Nombre = 'Polígono Don Bosco S.A de C.V.', Direccion = 'Car
 ', NRC = '253313-1', Telefono = '2398-1275', CorreoElectronico = 'sventas@gpdonbosco.com', PaginaWeb = 'www.gpdonbosco.com', Celular = '6445-5204', NIT = '0614-240216-104-4' WHERE EmpresaID = 2;
 
 UPDATE Empresas SET Telefono = '2318-0756', NRC = '127499-9',NIT = '0715-180179-101-1' WHERE EmpresaID = 1;
+
+ALTER TABLE Cotizaciones DROP COLUMN FechaEntregaEstimada;
+
+SELECT * FROM Cotizaciones;
+SELECT * FROM DetalleCotizaciones;
+SELECT * FROM Ordenes;
+
+DELETE FROM Cotizaciones
+DBCC CHECKIDENT ('Ordenes', RESEED, 0);

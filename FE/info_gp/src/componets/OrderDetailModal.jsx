@@ -26,22 +26,30 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
           const resOrder = await api.get(`/orders/full/${orderId}`);
           const order = resOrder.data;
           
-          // Luego obtenemos los detalles de la cotización asociada
-          const resCotizacion = await api.get(`/orders/${order.CotizacionID}`);
-          const cotizacion = resCotizacion.data;
-          
-          // Obtener datos completos de la cotización para ElaboradoPor y EjecutivoVenta
-          const resQuotationFull = await api.get(`/quotations/${order.CotizacionID}`);
-          const quotationFull = resQuotationFull.data;
+          // Obtenemos los detalles completos de la cotización (con productos)
+          const resQuotation = await api.get(`/quotations/${order.CotizacionID}`);
+          const quotationFull = resQuotation.data;
           
           // Combinar datos
+          const items = (quotationFull.productos || quotationFull.items || []).map(prod => {
+            let imagenURL = prod.imagenURL || prod.ImagenURL;
+            if (!imagenURL) {
+              const id = prod.ProductoID || prod.productoId;
+              imagenURL = id ? `http://localhost:5000/api/products/image/${id}` : '/src/assets/no-image.png';
+            }
+            return {
+              ...prod,
+              imagenURL,
+              ProductoID: prod.ProductoID || prod.productoId
+            };
+          });
           const formattedData = {
             numeroOrden: order.NumeroOrden,
             fechaOrden: order.FechaCreacion,
-            NumeroCotizacion: cotizacion.NumeroCotizacion,
-            NombreCliente: cotizacion.NombreCliente,
+            NumeroCotizacion: quotationFull.NumeroCotizacion,
+            NombreCliente: quotationFull.NombreCliente,
             FechaAprobacion: order.FechaCreacion,
-            FechaEntrega: order.FechaEntrega || quotationFull.FechaEntregaEstimada,
+            FechaEntrega: order.FechaEntrega,
             ElaboradoPor: order.UsuarioModificacion || quotationFull.NombreQuienCotiza || 'N/A',
             EjecutivoVenta: quotationFull.VendedorUsername || quotationFull.NombreQuienCotiza || 'N/A',
             ubicacionEntrega: order.UbicacionEntrega,
@@ -56,16 +64,16 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
             estadoOrden: order.EstadoNombre,
             estadoFactura: order.EstadoFacturaNombre || 'N/A',
             usuarioModificacion: order.UsuarioModificacion || 'No disponible',
-            items: cotizacion.items || [],
+            items,
             empresa: {
-              EmpresaID: cotizacion.EmpresaID,
-              Nombre: cotizacion.EmpresaNombre,
-              Direccion: cotizacion.EmpresaDireccion,
-              Telefono: cotizacion.EmpresaTelefono,
-              CorreoElectronico: cotizacion.EmpresaEmail,
-              PaginaWeb: cotizacion.EmpresaWeb,
-              NIT: cotizacion.NIT,
-              NRC: cotizacion.NRC
+              EmpresaID: quotationFull.EmpresaID,
+              Nombre: quotationFull.EmpresaNombre || quotationFull.Nombre,
+              Direccion: quotationFull.EmpresaDireccion || quotationFull.Direccion,
+              Telefono: quotationFull.EmpresaTelefono || quotationFull.Telefono,
+              CorreoElectronico: quotationFull.EmpresaEmail || quotationFull.CorreoElectronico,
+              PaginaWeb: quotationFull.EmpresaWeb || quotationFull.PaginaWeb,
+              NIT: quotationFull.NIT,
+              NRC: quotationFull.NRC
             }
           };
           

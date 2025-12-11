@@ -39,12 +39,12 @@ const Quotations = () => {
       return;
     }
 
-    const term = searchTerm.toLowerCase();
+    const lowerTerm = searchTerm.toLowerCase();
     const filtered = quotes.filter(q => 
-      q.NumeroCotizacion?.toLowerCase().includes(term) ||
-      q.NombreCliente?.toLowerCase().includes(term) ||
-      q.NombreEmpresa?.toLowerCase().includes(term) ||
-      q.Estado?.toLowerCase().includes(term)
+      q.NumeroCotizacion.toLowerCase().includes(lowerTerm) ||
+      q.NombreCliente.toLowerCase().includes(lowerTerm) ||
+      q.NombreEmpresa.toLowerCase().includes(lowerTerm) ||
+      q.Estado.toLowerCase().includes(lowerTerm)
     );
     setFilteredQuotes(filtered);
   }, [searchTerm, quotes]);
@@ -83,7 +83,7 @@ const Quotations = () => {
             </InputGroup.Text>
             <Form.Control
               type="text"
-              placeholder="Buscar por número de cotización, cliente, empresa o estado..."
+              placeholder="Buscar por número, cliente, empresa o estado..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="border-start-0 ps-0"
@@ -125,7 +125,6 @@ const Quotations = () => {
                   <th className="ps-4">Ref.</th>
                   <th>Cliente</th>
                   <th>Fecha creacion</th>
-                  <th>Fecha Entrega Estimada</th>
                   <th className="text-end">Total</th>
                   <th className="text-center">Estado</th>
                   <th className="text-center pe-4">Acciones</th>
@@ -140,7 +139,6 @@ const Quotations = () => {
                         <div className="small text-muted" style={{fontSize:'0.8em'}}>{q.NombreEmpresa}</div>
                     </td>
                     <td><div className="small text-muted d-flex align-items-center gap-1"><Calendar size={14}/> {q.FechaRealizacion ? q.FechaRealizacion.split('T')[0].split('-').reverse().join('/') : 'N/A'}</div></td>
-                    <td><div className="small text-muted d-flex align-items-center gap-1"><Calendar size={14}/> {q.FechaEntregaEstimada ? q.FechaEntregaEstimada.split('T')[0].split('-').reverse().join('/') : 'N/A'}</div></td>
                     <td className="text-end fw-bold">${q.TotalCotizacion ? q.TotalCotizacion.toFixed(2) : '0.00'}</td>
                     <td className="text-center"><Badge bg={getStatusBadge(q.Estado)} className="px-3 fw-normal">{q.Estado || 'Pendiente'}</Badge></td>
                     <td className="text-center pe-4">

@@ -8,7 +8,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
 
   const { cliente, items, user, numeroCotizacion, fecha, empresa } = data;
   const total = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
-  const mainColor = empresa.EmpresaID === 1 ? '#005689' : '#D4AF37';
+  const mainColor = empresa.EmpresaID === 1 ? '#008CB4' : '#D4AF37';
   
   // Generar timestamp único cuando cambia el vendedor
   const imageTimestamp = useMemo(() => Date.now(), [data.vendedor?.UsuarioID]);

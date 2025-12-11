@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import api from '../api/axios';
-import { Card, Table, Button, Container, Badge, Spinner, InputGroup, Form } from 'react-bootstrap';
-import { Printer, Edit, Search, Eye, Calendar } from 'lucide-react';
+import { Card, Table, Button, Container, Badge, Spinner, InputGroup, Form, Dropdown } from 'react-bootstrap';
+import { Printer, Edit, Search, Eye, Calendar, Filter } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import OrderPDF from '../componets/OrderPDF';
 import EditOrderModal from '../componets/EditOrderModal';
@@ -13,6 +13,7 @@ const Orders = () => {
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
   
   // Estado para impresión
   const [selectedOrderForPdf, setSelectedOrderForPdf] = useState(null);
@@ -28,6 +29,18 @@ const Orders = () => {
 
   // Estado para calendario
   const [showCalendar, setShowCalendar] = useState(false);
+
+  // Función para calcular días restantes
+  const calcularDiasRestantes = (fechaEntrega) => {
+    if (!fechaEntrega) return null;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const entrega = new Date(fechaEntrega);
+    entrega.setHours(0, 0, 0, 0);
+    const diffTime = entrega - hoy;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
 
 
   const handlePrint = useReactToPrint({
@@ -53,16 +66,38 @@ const Orders = () => {
     fetchOrders();
   }, []);
 
-  // Buscador
+  // Buscador y filtro con useMemo para evitar cambios en el array de dependencias
   useEffect(() => {
     const term = searchTerm.toLowerCase();
-    const filtered = orders.filter(o => 
+    let filtered = orders.filter(o => 
       o.NumeroOrden?.toLowerCase().includes(term) ||
       o.NombreCliente?.toLowerCase().includes(term) ||
-      o.NombreEmpresa?.toLowerCase().includes(term)
+      o.NombreEmpresa?.toLowerCase().includes(term) ||
+      o.DireccionCalle?.toLowerCase().includes(term) ||
+      o.UbicacionEntrega?.toLowerCase().includes(term)
     );
+
+    // Aplicar filtro de estado
+    if (filterStatus && filterStatus !== 'all') {
+      filtered = filtered.filter(o => o.EstadoNombre === filterStatus);
+    }
+
+    // Ordenar: pagadas y finalizadas al final
+    filtered.sort((a, b) => {
+      const aPagadaYFinalizada = (a.PagoPendiente <= 0 && a.EstadoNombre === 'Pagado y finalizado');
+      const bPagadaYFinalizada = (b.PagoPendiente <= 0 && b.EstadoNombre === 'Pagado y finalizado');
+      
+      // Si a está completada pero b no, a va después (return 1)
+      if (aPagadaYFinalizada && !bPagadaYFinalizada) return 1;
+      // Si b está completada pero a no, b va después (return -1)
+      if (!aPagadaYFinalizada && bPagadaYFinalizada) return -1;
+      
+      // Si ambas tienen el mismo estado de completitud, ordenar por fecha (más reciente primero)
+      return new Date(b.FechaCreacion) - new Date(a.FechaCreacion);
+    });
+
     setFilteredOrders(filtered);
-  }, [searchTerm, orders]);
+  }, [searchTerm, filterStatus, orders]);
 
   // Preparar datos para imprimir (Carga detalles completos)
   const preparePrint = async (cotizacionId) => {
@@ -93,7 +128,7 @@ const Orders = () => {
           numeroOrden: orderData.NumeroOrden,
           NumeroCotizacion: cotizacion.NumeroCotizacion,
           NombreCliente: cotizacion.NombreCliente,
-          FechaEntrega: orderData.FechaEntrega || quotationFull.FechaEntregaEstimada,
+          FechaEntrega: orderData.FechaEntrega,
           ElaboradoPor: orderData.UsuarioModificacion || quotationFull.NombreQuienCotiza || 'N/A',
           EjecutivoVenta: quotationFull.VendedorUsername || quotationFull.NombreQuienCotiza || 'N/A',
           items: cotizacion.items || [],
@@ -130,18 +165,50 @@ const Orders = () => {
         </Button>
       </div>
 
-      {/* Buscador */}
+      {/* Buscador y Filtro */}
       <Card className="shadow-sm border-0 mb-3">
         <Card.Body className="py-2">
-          <InputGroup size="sm">
-            <InputGroup.Text className="bg-white border-end-0"><Search size={16}/></InputGroup.Text>
-            <Form.Control 
-              placeholder="Buscar por cliente o referencia..." 
-              className="border-start-0"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </InputGroup>
+          <div className="d-flex gap-2">
+            <InputGroup size="sm" style={{flex: 1}}>
+              <InputGroup.Text className="bg-white border-end-0"><Search size={16}/></InputGroup.Text>
+              <Form.Control 
+                placeholder="Buscar por cliente, referencia o dirección..." 
+                className="border-start-0"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </InputGroup>
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-secondary" size="sm" className="d-flex align-items-center gap-1">
+                <Filter size={16} />
+                {filterStatus === 'all' ? 'Todos' : filterStatus}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item onClick={() => setFilterStatus('all')}>Todos</Dropdown.Item>
+                <Dropdown.Divider />
+                <Dropdown.Item onClick={() => setFilterStatus('Pagado y finalizado')} className="d-flex align-items-center gap-2">
+                  <span style={{width: '12px', height: '12px', borderRadius: '2px', backgroundColor: '#ffffff', border: '1px solid #ccc', display: 'inline-block'}}></span>
+                  Pagado y finalizado
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => setFilterStatus('Pago anticipo y pendiente de entrega')} className="d-flex align-items-center gap-2">
+                  <span style={{width: '12px', height: '12px', borderRadius: '2px', backgroundColor: '#dc3545', display: 'inline-block'}}></span>
+                  Pago anticipo y pendiente de entrega
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => setFilterStatus('Entregado y pendiente de pago')} className="d-flex align-items-center gap-2">
+                  <span style={{width: '12px', height: '12px', borderRadius: '2px', backgroundColor: '#007bff', display: 'inline-block'}}></span>
+                  Entregado y pendiente de pago
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => setFilterStatus('Pendiente de entrega')} className="d-flex align-items-center gap-2">
+                  <span style={{width: '12px', height: '12px', borderRadius: '2px', backgroundColor: '#28a745', display: 'inline-block'}}></span>
+                  Pendiente de entrega
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => setFilterStatus('Pagado y pendiente de entrega')} className="d-flex align-items-center gap-2">
+                  <span style={{width: '12px', height: '12px', borderRadius: '2px', backgroundColor: '#fefe71ff', display: 'inline-block'}}></span>
+                  Pagado y pendiente de entrega
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
         </Card.Body>
       </Card>
 
@@ -154,7 +221,10 @@ const Orders = () => {
                 <tr>
                   <th className="ps-4">Ref</th>
                   <th>Cliente</th>
+                  <th>Ejecutivo</th>
+                  <th>Dirección</th>
                   <th>Entrega</th>
+                  <th>Días Rest.</th>
                   <th>Estado</th>
                   <th>Pagos</th>
                   <th className="text-end pe-4">Acciones</th>
@@ -175,6 +245,7 @@ const Orders = () => {
 
                   const textColor = getTextColor(order.ColorHex);
                   const bgColor = order.ColorHex || '#ffffff';
+                  const diasRestantes = calcularDiasRestantes(order.FechaEntrega);
 
                   return (
                     <tr 
@@ -189,15 +260,29 @@ const Orders = () => {
                           <div className="small fw-normal" style={{ opacity: 0.8 }}>{order.ElaboradoPor}</div>
                       </td>
                       <td style={{ backgroundColor: bgColor, color: textColor }}>{order.NombreCliente}</td>
+                      <td className="small" style={{ backgroundColor: bgColor, color: textColor }}>
+                        {order.EjecutivoVenta || 'N/A'}
+                      </td>
+                      <td className="small" style={{ backgroundColor: bgColor, color: textColor }}>
+                        {order.UbicacionEntrega || order.DireccionCalle || 'N/A'}
+                      </td>
                       <td style={{ backgroundColor: bgColor, color: textColor }}>
                         {order.FechaEntrega ? new Date(order.FechaEntrega).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td style={{ backgroundColor: bgColor, color: textColor }}>
+                        {diasRestantes !== null ? (
+                          <Badge bg={diasRestantes < 0 ? 'danger' : diasRestantes <= 3 ? 'warning' : 'success'}>
+                            {diasRestantes < 0 ? `${Math.abs(diasRestantes)} dias atrasado` : diasRestantes === 0 ? 'Hoy' : `${diasRestantes} dias`}
+                          </Badge>
+                        ) : 'N/A'}
                       </td>
                       <td style={{ backgroundColor: bgColor }}>
                           <Badge 
                             style={{ 
                               backgroundColor: bgColor,
-                              color: textColor,
-                              border: `1px solid ${textColor}`
+                              color: '#ffffff',
+                              border: `1px solid rgba(255,255,255,0.3)`,
+                              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
                             }}
                             className="fw-normal"
                           >

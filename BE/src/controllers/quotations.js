@@ -19,6 +19,7 @@ export const createQuote = async (req, res) => {
     if (!clienteId || !items || items.length === 0) {
         return res.status(400).json({ message: "Faltan datos del cliente o productos" });
     }
+    // Log para depuración: ver cómo llegan los productos
 
     const pool = await getConnection();
     const transaction = new sql.Transaction(pool);
@@ -28,8 +29,6 @@ export const createQuote = async (req, res) => {
 
         // A. Generar Número Correlativo
         const idResult = await transaction.request().query("SELECT ISNULL(MAX(CotizacionID), 0) + 1 as NextID FROM Cotizaciones");
-        const nextId = idResult.recordset[0].NextID;
-        
         const initials = nombreQuienCotiza ? nombreQuienCotiza.substring(0, 2).toUpperCase() : 'XX';
         const numeroCotizacion = `${initials}-${nextId.toString().padStart(6, '0')}`; 
 
@@ -47,19 +46,18 @@ export const createQuote = async (req, res) => {
             .input("atencion", sql.NVarChar, atencionASnapshot)
             .input("dir", sql.NVarChar, direccionSnapshot)
             .input("total", sql.Decimal(18, 2), totalGeneral)
-            .input("fechaEntrega", sql.DateTime, fechaEntrega || null)
             .input("vendedorId", sql.Int, vendedorId || null) // <--- Guardamos vendedor
             .query(`
                 INSERT INTO Cotizaciones (
                     NumeroCotizacion, ClienteID, EmpresaID, NombreQuienCotiza, 
                     TelefonoSnapshot, AtencionASnapshot, DireccionSnapshot, 
-                    TotalCotizacion, Estado, FechaEntregaEstimada, VendedorID
+                    TotalCotizacion, Estado, VendedorID
                 )
                 OUTPUT INSERTED.CotizacionID
                 VALUES (
                     @numero, @clienteId, @empresaId, @nombreQuien, 
                     @tel, @atencion, @dir, 
-                    @total, 'Pendiente', @fechaEntrega, @vendedorId
+                    @total, 'Pendiente', @vendedorId
                 )
             `);
 
@@ -123,7 +121,6 @@ export const updateQuote = async (req, res) => {
             .input("atencion", sql.NVarChar, atencionASnapshot)
             .input("dir", sql.NVarChar, direccionSnapshot)
             .input("total", sql.Decimal(18, 2), totalGeneral)
-            .input("fechaEntrega", sql.DateTime, fechaEntrega || null)
             .query(`
                 UPDATE Cotizaciones SET
                     ClienteID = @clienteId,
@@ -132,8 +129,7 @@ export const updateQuote = async (req, res) => {
                     TelefonoSnapshot = @tel,
                     AtencionASnapshot = @atencion,
                     DireccionSnapshot = @dir,
-                    TotalCotizacion = @total,
-                    FechaEntregaEstimada = @fechaEntrega
+                    TotalCotizacion = @total
                 WHERE CotizacionID = @id
             `);
 
@@ -144,9 +140,14 @@ export const updateQuote = async (req, res) => {
 
         // 3. Insertar productos nuevos
         for (const item of items) {
+            const productoId = parseInt(item.productoId);
+            if (!productoId || isNaN(productoId)) {
+                console.warn(`Producto inválido detectado y omitido: ${JSON.stringify(item)}`);
+                continue; // Omitir productos inválidos
+            }
             await transaction.request()
                 .input("cotId", sql.Int, parseInt(id))
-                .input("prodId", sql.Int, item.productoId)
+                .input("prodId", sql.Int, productoId)
                 .input("cant", sql.Int, item.cantidad)
                 .input("precio", sql.Decimal(18, 2), item.precio)
                 .query(`
@@ -160,6 +161,7 @@ export const updateQuote = async (req, res) => {
 
     } catch (error) {
         if (transaction._aborted === false) await transaction.rollback();
+        console.error("Error en updateQuote:", error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -173,7 +175,7 @@ export const getQuotes = async (req, res) => {
         const result = await pool.request().query(`
             SELECT 
                 c.CotizacionID, c.NumeroCotizacion, c.FechaRealizacion, 
-                c.TotalCotizacion, c.Estado, c.FechaEntregaEstimada,
+                c.TotalCotizacion, c.Estado,
                 cli.NombreCliente,
                 e.Nombre as NombreEmpresa
             FROM Cotizaciones c
@@ -211,7 +213,6 @@ export const getQuoteById = async (req, res) => {
                     c.DireccionSnapshot,
                     c.TotalCotizacion,
                     c.Estado,
-                    c.FechaEntregaEstimada,
                     c.UsuarioDecision,
                     cli.NombreCliente, cli.CorreoElectronico, 
                     cli.Telefono, cli.AtencionA, cli.DireccionCalle,

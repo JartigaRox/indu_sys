@@ -37,23 +37,29 @@ export const getOrders = async (req, res) => {
                 o.TotalPagado,
                 o.PagoPendiente,
                 o.MontoVenta,
+                ISNULL(o.UbicacionEntrega, '') as UbicacionEntrega,
                 c.NumeroCotizacion,
                 c.FechaRealizacion,
+                c.VendedorID,
                 cli.NombreCliente,
-                e.Nombre as NombreEmpresa,
-                eo.Nombre as EstadoNombre,
-                eo.ColorHex,
-                u.Username as ElaboradoPor
+                ISNULL(cli.DireccionCalle, '') as DireccionCalle,
+                ISNULL(e.Nombre, '') as NombreEmpresa,
+                ISNULL(eo.Nombre, 'Sin Estado') as EstadoNombre,
+                ISNULL(eo.ColorHex, '#ffffff') as ColorHex,
+                ISNULL(u.Username, 'N/A') as ElaboradoPor,
+                ISNULL(v.Username, 'N/A') as EjecutivoVenta
             FROM Ordenes o
             INNER JOIN Cotizaciones c ON o.CotizacionID = c.CotizacionID
             INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
             LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID
             LEFT JOIN EstadosOrden eo ON o.EstadoOrdenID = eo.EstadoOrdenID
             LEFT JOIN Usuarios u ON o.UsuarioID = u.UsuarioID
+            LEFT JOIN Usuarios v ON c.VendedorID = v.UsuarioID
             ORDER BY o.FechaCreacion DESC
         `);
         res.json(result.recordset);
     } catch (error) {
+        console.error('Error en getOrders:', error);
         res.status(500).json({ message: error.message });
     }
 };

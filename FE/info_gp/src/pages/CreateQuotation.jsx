@@ -30,7 +30,6 @@ const CreateQuotation = () => {
   // Formulario Encabezado
   const [selectedClient, setSelectedClient] = useState(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
-  const [fechaEntrega, setFechaEntrega] = useState('');
   
   // Formulario Items
   const [currentProduct, setCurrentProduct] = useState(null); 
@@ -39,6 +38,32 @@ const CreateQuotation = () => {
   const [items, setItems] = useState([]);
   const [editingIndex, setEditingIndex] = useState(-1);
   const [loading, setLoading] = useState(true);
+
+  // Función para normalizar texto (eliminar tildes)
+  const normalizeText = (text) => {
+    if (!text) return '';
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  };
+
+  // Función de filtro personalizada para react-select (clientes)
+  const filterClientOption = (option, inputValue) => {
+    const normalizedInput = normalizeText(inputValue);
+    const direccionValue = option.data?.direccion || '';
+    const matchLabel = normalizeText(option.label).includes(normalizedInput);
+    const matchDireccion = normalizeText(direccionValue).includes(normalizedInput);
+    return matchLabel || matchDireccion;
+  };
+
+  // Función de filtro personalizada para react-select (productos)
+  const filterProductOption = (option, inputValue) => {
+    const normalizedInput = normalizeText(inputValue);
+    const descripcionValue = option.data?.descripcion || '';
+    const categoriaValue = option.data?.categoria || '';
+    const matchLabel = normalizeText(option.label).includes(normalizedInput);
+    const matchDescripcion = normalizeText(descripcionValue).includes(normalizedInput);
+    const matchCategoria = normalizeText(categoriaValue).includes(normalizedInput);
+    return matchLabel || matchDescripcion || matchCategoria;
+  };
 
   // Datos calculados para el PDF (se usan tanto en vista previa como en impresión)
   const clientData = clients.find(c => c.ClienteID === selectedClient?.value);
@@ -53,7 +78,6 @@ const CreateQuotation = () => {
       user, 
       numeroCotizacion: quoteNumber, 
       fecha: new Date(), 
-      fechaEntrega,
       empresa: companyData,
       vendedor: selectedSeller?.data || null
   };
@@ -96,6 +120,7 @@ const CreateQuotation = () => {
         const clientOpts = resClients.data.map(c => ({
             value: c.ClienteID,
             label: c.NombreCliente,
+            direccion: c.DireccionCalle || '',
             data: c
         }));
         setClientOptions(clientOpts);
@@ -103,7 +128,9 @@ const CreateQuotation = () => {
         const options = resProducts.data.map(p => ({
             value: p.ProductoID,
             label: `${p.CodigoProducto} - ${p.Nombre}`,
-            data: p 
+            descripcion: p.Descripcion || '',
+            categoria: p.Categoria || '',
+            data: p
         }));
         setProductOptions(options);
 
@@ -118,7 +145,6 @@ const CreateQuotation = () => {
             const clientOpt = clientOpts.find(opt => opt.value === q.ClienteID);
             setSelectedClient(clientOpt || null);
             setSelectedCompanyId(q.EmpresaID);
-            setFechaEntrega(q.FechaEntregaEstimada ? q.FechaEntregaEstimada.split('T')[0] : '');
             
             // Cargar vendedor si existe
             if (q.VendedorID) {
@@ -197,15 +223,14 @@ const CreateQuotation = () => {
     }
     
     const payload = {
-        clienteId: selectedClient.value,
-        empresaId: parseInt(selectedCompanyId),
-        nombreQuienCotiza: user.username,
-        telefonoSnapshot: clientData?.Telefono,
-        atencionASnapshot: clientData?.AtencionA,
-        direccionSnapshot: clientData?.DireccionCalle,
-        items: items.map(i => ({ productoId: i.productoId, cantidad: i.cantidad, precio: i.precio })),
-        fechaEntrega: fechaEntrega || null,
-        vendedorId: selectedSeller?.value || null
+      clienteId: selectedClient.value,
+      empresaId: parseInt(selectedCompanyId),
+      nombreQuienCotiza: user.username,
+      telefonoSnapshot: clientData?.Telefono,
+      atencionASnapshot: clientData?.AtencionA,
+      direccionSnapshot: clientData?.DireccionCalle,
+      items: items.map(i => ({ productoId: Array.isArray(i.productoId) ? i.productoId[0] : i.productoId, cantidad: i.cantidad, precio: i.precio })),
+      vendedorId: selectedSeller?.value || null
     };
 
     try {
@@ -270,8 +295,9 @@ const CreateQuotation = () => {
                   options={clientOptions} 
                   value={selectedClient} 
                   onChange={setSelectedClient} 
-                  placeholder="Buscar cliente..." 
+                  placeholder="Buscar cliente por nombre o dirección..." 
                   isClearable
+                  filterOption={filterClientOption}
                 />
               </Form.Group>
 
@@ -307,7 +333,13 @@ const CreateQuotation = () => {
               </div>
               <Row className="g-2">
                 <Col md={12}>
-                    <Select options={productOptions} value={currentProduct} onChange={setCurrentProduct} placeholder="Buscar producto..." />
+                    <Select 
+                      options={productOptions} 
+                      value={currentProduct} 
+                      onChange={setCurrentProduct} 
+                      placeholder="Buscar por código, nombre o descripción..." 
+                      filterOption={filterProductOption}
+                    />
                 </Col>
                 <Col md={6}><Form.Control type="number" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="Cant" /></Col>
                 <Col md={6}><Form.Control type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="$$" /></Col>

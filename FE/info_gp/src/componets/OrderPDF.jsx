@@ -9,6 +9,7 @@ const OrderPDF = forwardRef(({ data }, ref) => {
     numeroOrden, NumeroCotizacion, NombreCliente, FechaAprobacion, FechaEntrega, 
     ElaboradoPor, EjecutivoVenta, items, empresa 
   } = data;
+  
 
   const cellStyle = {
     border: '2px solid black',
@@ -81,7 +82,8 @@ const OrderPDF = forwardRef(({ data }, ref) => {
       </table>
 
       {/* TABLA DE PRODUCTOS (mismo diseño que cotización pero sin precios) */}
-      {items?.map((item, i) => (
+      {items && items.length > 0 ? (
+        items.map((item, i) => (
         <table key={i} className="w-100 mb-4 product-table" style={{ border: '2px solid black', borderCollapse: 'collapse' }}>
           <tbody>
             {/* Fila 1: Headers con CAN, CÓDIGO, NOMBRE ÍTEM */}
@@ -98,7 +100,7 @@ const OrderPDF = forwardRef(({ data }, ref) => {
               <td rowSpan="3" className="text-center align-middle" style={{ border: '1px solid black', width: '40%', padding: '8px' }}>
                 {(item.ImagenURL || item.imagenURL) ? (
                   <img 
-                    src={`http://localhost:5000/api/products/image/${item.ProductoID || item.productoId}`}
+                    src={item.imagenURL || item.ImagenURL}
                     alt={item.NombreProducto || item.nombre} 
                     style={{ 
                       width: '100%',
@@ -107,7 +109,6 @@ const OrderPDF = forwardRef(({ data }, ref) => {
                       maxHeight: '200px',
                       objectFit: 'contain'
                     }}
-                    onError={(e) => e.target.src = 'https://via.placeholder.com/200?text=IMG'}
                   />
                 ) : (
                   <div className="text-muted" style={{ fontSize: '11px' }}>N/A</div>
@@ -146,7 +147,13 @@ const OrderPDF = forwardRef(({ data }, ref) => {
             </tr>
           </tbody>
         </table>
-      ))}
+      ))
+      ) : (
+        <div className="alert alert-warning text-center my-4" role="alert" style={{ border: '2px solid #856404', backgroundColor: '#fff3cd', padding: '20px', borderRadius: '5px' }}>
+          <strong style={{ fontSize: '14px', color: '#856404' }}>⚠️ No hay productos asociados a esta orden</strong>
+          <p className="mb-0 small mt-2" style={{ fontSize: '11px', color: '#856404' }}>Los productos de la cotización original no están disponibles.</p>
+        </div>
+      )}
 
     </div>
   );
