@@ -4,7 +4,6 @@ import { getConnection, sql } from '../../db.js';
 // 1. UTILIDADES (Categorías y Subcategorías)
 // ---------------------------------------------------
 
-// Obtener todas las categorías (Para el primer Select)
 export const getCategories = async (req, res) => {
     try {
         const pool = await getConnection();
@@ -15,13 +14,15 @@ export const getCategories = async (req, res) => {
     }
 };
 
-// Obtener subcategorías filtradas por ID de categoría (Para el segundo Select)
 export const getSubcategories = async (req, res) => {
     const { catId } = req.params;
+    // Validación de ID
+    if (!catId || isNaN(parseInt(catId))) return res.json([]); 
+
     try {
         const pool = await getConnection();
         const result = await pool.request()
-            .input("catId", sql.Int, catId)
+            .input("catId", sql.Int, parseInt(catId))
             .query("SELECT * FROM Subcategorias WHERE CategoriaID = @catId");
         res.json(result.recordset);
     } catch (error) {
@@ -29,7 +30,6 @@ export const getSubcategories = async (req, res) => {
     }
 };
 
-// Obtener todos los tipos de mueble (Para combobox)
 export const getTiposMueble = async (req, res) => {
     try {
         const pool = await getConnection();
@@ -40,7 +40,6 @@ export const getTiposMueble = async (req, res) => {
     }
 };
 
-// Obtener todos los estados de producto (Para combobox)
 export const getEstadosProducto = async (req, res) => {
     try {
         const pool = await getConnection();
@@ -55,11 +54,9 @@ export const getEstadosProducto = async (req, res) => {
 // 3. CONSULTAS Y UTILIDADES PÚBLICAS
 // ---------------------------------------------------
 
-// Listar productos (Optimizado para el buscador del frontend)
 export const getProducts = async (req, res) => {
     try {
         const pool = await getConnection();
-        // Hacemos JOIN para traer los nombres legibles de categoría/subcategoría
         const result = await pool.request().query(`
             SELECT 
                 p.ProductoID, p.CodigoProducto, p.Nombre, p.Descripcion,
@@ -79,22 +76,29 @@ export const getProducts = async (req, res) => {
     }
 };
 
-// Obtener la imagen de un producto (Para usar en <img src="...">)
-// ESTA RUTA NO DEBE TENER 'verifyToken' EN EL ARCHIVO DE RUTAS
+// --- FIX CRÍTICO: Validación de ID en imagen ---
 export const getProductImage = async (req, res) => {
+    const { id } = req.params;
+    
+    // Si el ID no es un número válido, devolvemos 404 sin molestar a la BD
+    if (!id || isNaN(parseInt(id))) {
+        return res.status(404).send("ID inválido");
+    }
+
     try {
         const pool = await getConnection();
         const result = await pool.request()
-            .input("id", sql.Int, req.params.id)
+            .input("id", sql.Int, parseInt(id))
             .query("SELECT Imagen FROM Productos WHERE ProductoID = @id");
 
         if (result.recordset.length > 0 && result.recordset[0].Imagen) {
-            res.setHeader('Content-Type', 'image/jpeg'); // O image/png
+            res.setHeader('Content-Type', 'image/jpeg');
             res.send(result.recordset[0].Imagen);
         } else {
             res.status(404).send("Imagen no encontrada");
         }
     } catch (error) {
+        console.error("Error obteniendo imagen:", error.message);
         res.status(500).send(error.message);
     }
 };
@@ -108,14 +112,16 @@ export const createProduct = async (req, res) => {
     try {
         const pool = await getConnection();
 
-        // 1. Obtener códigos de categoría
+        // 1. Obtener códigos
         const codesResult = await pool.request()
             .input("subId", sql.Int, subcategoriaId)
             .query(`SELECT s.CodigoSubcategoria, c.CodigoCategoria FROM Subcategorias s INNER JOIN Categorias c ON s.CategoriaID = c.CategoriaID WHERE s.SubcategoriaID = @subId`);
         
+        if (codesResult.recordset.length === 0) return res.status(400).json({ message: "Subcategoría inválida" });
+
         const { CodigoCategoria, CodigoSubcategoria } = codesResult.recordset[0];
 
-        // 2. Correlativo por subcategoría
+        // 2. Correlativo
         const idResult = await pool.request()
             .input("subId", sql.Int, subcategoriaId)
             .query(`
@@ -125,7 +131,7 @@ export const createProduct = async (req, res) => {
             `);
         const nextId = idResult.recordset[0].NextID;
 
-        // 3. CAMBIO A 4 DÍGITOS AQUÍ: .padStart(4, '0')
+        // 3. Código Final
         const codigoFinal = `${CodigoCategoria}-${CodigoSubcategoria}-${nextId.toString().padStart(4, '0')}`;
 
         await pool.request()
@@ -142,21 +148,19 @@ export const createProduct = async (req, res) => {
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// --- NUEVO: OBTENER PRODUCTO POR ID (Para editar) ---
+// --- FIX: Validación en getProduct ---
 export const getProduct = async (req, res) => {
     const { id } = req.params;
+    if (!id || isNaN(parseInt(id))) return res.status(400).json({ message: "ID inválido" });
+
     try {
         const pool = await getConnection();
         const result = await pool.request()
-            .input("id", sql.Int, id)
+            .input("id", sql.Int, parseInt(id))
             .query(`
                 SELECT 
-                    p.*, 
-                    s.CategoriaID,
-                    s.CodigoSubcategoria,
-                    c.CodigoCategoria,
-                    tm.Tipo as TipoMueble,
-                    ep.Estado as EstadoProducto
+                    p.*, s.CategoriaID, s.CodigoSubcategoria, c.CodigoCategoria,
+                    tm.Tipo as TipoMueble, ep.Estado as EstadoProducto
                 FROM Productos p
                 LEFT JOIN Subcategorias s ON p.SubcategoriaID = s.SubcategoriaID
                 LEFT JOIN Categorias c ON s.CategoriaID = c.CategoriaID
@@ -164,20 +168,23 @@ export const getProduct = async (req, res) => {
                 LEFT JOIN EstadoProducto ep ON p.EstadoProductoID = ep.EstadoProductoID
                 WHERE p.ProductoID = @id
             `);
+        if (result.recordset.length === 0) return res.status(404).json({ message: "Producto no encontrado" });
         res.json(result.recordset[0]);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// --- NUEVO: ACTUALIZAR PRODUCTO ---
+// --- FIX: Validación en updateProduct ---
 export const updateProduct = async (req, res) => {
     const { id } = req.params;
+    if (!id || isNaN(parseInt(id))) return res.status(400).json({ message: "ID inválido" });
+
     const { nombre, descripcion, subcategoriaId, tipoMuebleId, estadoProductoId } = req.body;
-    const imagen = req.file ? req.file.buffer : null; // Si viene imagen nueva
+    const imagen = req.file ? req.file.buffer : null;
 
     try {
         const pool = await getConnection();
         const request = pool.request()
-            .input("id", sql.Int, id)
+            .input("id", sql.Int, parseInt(id))
             .input("nombre", sql.NVarChar, nombre)
             .input("descripcion", sql.NVarChar, descripcion)
             .input("subId", sql.Int, subcategoriaId)
@@ -186,7 +193,6 @@ export const updateProduct = async (req, res) => {
 
         let query = "UPDATE Productos SET Nombre = @nombre, Descripcion = @descripcion, SubcategoriaID = @subId, TipoMuebleID = @tipoMuebleId, EstadoProductoID = @estadoProductoId";
         
-        // Solo actualizamos imagen si el usuario subió una nueva
         if (imagen) {
             request.input("imagen", sql.VarBinary, imagen);
             query += ", Imagen = @imagen";
@@ -199,14 +205,14 @@ export const updateProduct = async (req, res) => {
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// --- NUEVO: ELIMINAR PRODUCTO ---
+// --- FIX: Validación en deleteProduct ---
 export const deleteProduct = async (req, res) => {
     const { id } = req.params;
+    if (!id || isNaN(parseInt(id))) return res.status(400).json({ message: "ID inválido" });
+
     try {
         const pool = await getConnection();
-        // Cuidado: Si el producto está en cotizaciones, SQL dará error por FK.
-        // Lo ideal sería un "Soft Delete" (Estado = Inactivo), pero por ahora haremos delete físico.
-        await pool.request().input("id", sql.Int, id).query("DELETE FROM Productos WHERE ProductoID = @id");
+        await pool.request().input("id", sql.Int, parseInt(id)).query("DELETE FROM Productos WHERE ProductoID = @id");
         res.json({ message: "Producto eliminado" });
     } catch (error) {
         if (error.number === 547) {

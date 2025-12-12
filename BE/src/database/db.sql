@@ -921,3 +921,5 @@ SELECT * FROM Ordenes;
 SELECT * FROM TiposVendedor;
 SELECT * FROM TipoMuebles;
 SELECT * FROM EstadoProducto;
+
+ALTER TABLE DetalleCotizaciones ADD Descripcion NVARCHAR(MAX);

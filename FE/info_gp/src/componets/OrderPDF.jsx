@@ -1,15 +1,16 @@
 import React, { forwardRef } from 'react';
 
-const API_URL = "http://localhost:5000/api";
-
 const OrderPDF = forwardRef(({ data }, ref) => {
   if (!data) return null;
 
+  // Desestructuramos los datos, incluyendo ahora 'Observaciones'
   const { 
-    numeroOrden, NumeroCotizacion, NombreCliente, FechaAprobacion, FechaEntrega, 
-    ElaboradoPor, EjecutivoVenta, items, empresa 
+    numeroOrden, NumeroCotizacion, NombreCliente, FechaEntrega, 
+    ElaboradoPor, EjecutivoVenta, items, Observaciones, observaciones 
   } = data;
   
+  // Normalizamos para aceptar mayúscula o minúscula
+  const notasFinales = Observaciones || observaciones || '';
 
   const cellStyle = {
     border: '2px solid black',
@@ -81,55 +82,35 @@ const OrderPDF = forwardRef(({ data }, ref) => {
         </tbody>
       </table>
 
-      {/* TABLA DE PRODUCTOS (mismo diseño que cotización pero sin precios) */}
+      {/* TABLA DE PRODUCTOS */}
       {items && items.length > 0 ? (
         items.map((item, i) => (
         <table key={i} className="w-100 mb-4 product-table" style={{ border: '2px solid black', borderCollapse: 'collapse' }}>
           <tbody>
-            {/* Fila 1: Headers con CAN, CÓDIGO, NOMBRE ÍTEM */}
+            {/* Fila 1: Headers */}
             <tr>
-              <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '8%', padding: '8px', fontSize: '11px' }}>
-                CAN
-              </td>
-              <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '15%', padding: '8px', fontSize: '11px' }}>
-                CÓDIGO
-              </td>
-              <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '37%', padding: '8px', fontSize: '11px' }}>
-                NOMBRE ÍTEM
-              </td>
+              <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '8%', padding: '8px', fontSize: '11px' }}>CAN</td>
+              <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '15%', padding: '8px', fontSize: '11px' }}>CÓDIGO</td>
+              <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '37%', padding: '8px', fontSize: '11px' }}>NOMBRE ÍTEM</td>
               <td rowSpan="3" className="text-center align-middle" style={{ border: '1px solid black', width: '40%', padding: '8px' }}>
                 {(item.ImagenURL || item.imagenURL) ? (
                   <img 
                     src={item.imagenURL || item.ImagenURL}
                     alt={item.NombreProducto || item.nombre} 
-                    style={{ 
-                      width: '100%',
-                      maxWidth: '200px',
-                      height: 'auto',
-                      maxHeight: '200px',
-                      objectFit: 'contain'
-                    }}
+                    style={{ width: '100%', maxWidth: '200px', height: 'auto', maxHeight: '200px', objectFit: 'contain' }}
                   />
                 ) : (
                   <div className="text-muted" style={{ fontSize: '11px' }}>N/A</div>
                 )}
               </td>
             </tr>
-            
-            {/* Fila 2: Valores de CAN, CÓDIGO, NOMBRE */}
+            {/* Fila 2: Valores */}
             <tr>
-              <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
-                {item.Cantidad || item.cantidad}
-              </td>
-              <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
-                {item.CodigoProducto || item.codigo || 'N/A'}
-              </td>
-              <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
-                {item.NombreProducto || item.nombre || 'N/A'}
-              </td>
+              <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>{item.Cantidad || item.cantidad}</td>
+              <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>{item.CodigoProducto || item.codigo || 'N/A'}</td>
+              <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>{item.NombreProducto || item.nombre || 'N/A'}</td>
             </tr>
-            
-            {/* Fila 3: Descripciones (bullets) - SIN FILA DE PRECIOS */}
+            {/* Fila 3: Descripción */}
             <tr>
               <td colSpan="3" className="align-top" style={{ border: '1px solid black', padding: '12px' }}>
                 {(item.Descripcion || item.descripcion) ? (
@@ -139,9 +120,7 @@ const OrderPDF = forwardRef(({ data }, ref) => {
                     ))}
                   </ul>
                 ) : (
-                  <ul className="mb-0 ps-3" style={{ fontSize: '10px' }}>
-                    <li>SIN DESCRIPCIÓN</li>
-                  </ul>
+                  <ul className="mb-0 ps-3" style={{ fontSize: '10px' }}><li>SIN DESCRIPCIÓN</li></ul>
                 )}
               </td>
             </tr>
@@ -149,11 +128,18 @@ const OrderPDF = forwardRef(({ data }, ref) => {
         </table>
       ))
       ) : (
-        <div className="alert alert-warning text-center my-4" role="alert" style={{ border: '2px solid #856404', backgroundColor: '#fff3cd', padding: '20px', borderRadius: '5px' }}>
-          <strong style={{ fontSize: '14px', color: '#856404' }}>⚠️ No hay productos asociados a esta orden</strong>
-          <p className="mb-0 small mt-2" style={{ fontSize: '11px', color: '#856404' }}>Los productos de la cotización original no están disponibles.</p>
+        <div className="alert alert-warning text-center my-4" style={{ border: '2px solid #856404', backgroundColor: '#fff3cd', padding: '20px' }}>
+          <strong>⚠️ No hay productos asociados a esta orden</strong>
         </div>
       )}
+
+      {/* --- SECCIÓN DE OBSERVACIONES (NUEVO) --- */}
+      <div className="mt-4 p-3 avoid-break" style={{ border: '2px solid black', backgroundColor: '#fdfdfd' }}>
+        <h6 className="fw-bold mb-2" style={{ color: '#003366', borderBottom: '1px solid #ddd', paddingBottom: '5px' }}>OBSERVACIONES:</h6>
+        <p className="mb-0 text-uppercase" style={{ fontSize: '11px', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+          {notasFinales ? notasFinales : 'SIN OBSERVACIONES'}
+        </p>
+      </div>
 
     </div>
   );
