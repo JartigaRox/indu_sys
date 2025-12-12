@@ -183,6 +183,20 @@ export const updateProduct = async (req, res) => {
 
     try {
         const pool = await getConnection();
+
+        // 1. VALIDACIÓN: Verificar si el producto ya está en cotizaciones
+        const checkUsage = await pool.request()
+            .input("id", sql.Int, parseInt(id))
+            .query("SELECT TOP 1 1 FROM DetalleCotizaciones WHERE ProductoID = @id");
+
+        if (checkUsage.recordset.length > 0) {
+            // Retornamos 409 (Conflict) para que el frontend sepa qué hacer
+            return res.status(409).json({ 
+                message: "No se puede editar: El producto ya forma parte de cotizaciones o pedidos históricos. Modificarlo afectaría documentos existentes." 
+            });
+        }
+
+        // 2. Si no está en uso, procedemos a actualizar
         const request = pool.request()
             .input("id", sql.Int, parseInt(id))
             .input("nombre", sql.NVarChar, nombre)
@@ -205,7 +219,7 @@ export const updateProduct = async (req, res) => {
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// --- FIX: Validación en deleteProduct ---
+// --- ELIMINAR PRODUCTO (Se queda igual) ---
 export const deleteProduct = async (req, res) => {
     const { id } = req.params;
     if (!id || isNaN(parseInt(id))) return res.status(400).json({ message: "ID inválido" });
@@ -218,6 +232,22 @@ export const deleteProduct = async (req, res) => {
         if (error.number === 547) {
             return res.status(400).json({ message: "No se puede eliminar: El producto ya está en cotizaciones." });
         }
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const checkProductUsage = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const pool = await getConnection();
+        // Solo necesitamos saber si existe al menos 1 registro (TOP 1 1)
+        const result = await pool.request()
+            .input("id", sql.Int, parseInt(id))
+            .query("SELECT TOP 1 1 FROM DetalleCotizaciones WHERE ProductoID = @id");
+
+        // Devolvemos true si encontró registros, false si está limpio
+        res.json({ inUse: result.recordset.length > 0 });
+    } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };

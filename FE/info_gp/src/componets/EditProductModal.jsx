@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Modal, Form, Button, Row, Col, Image, Spinner } from 'react-bootstrap';
-import { Save, Upload } from 'lucide-react';
+import { Save, Upload, Copy } from 'lucide-react';
 import api from '../api/axios';
 import Swal from 'sweetalert2';
 
-const EditProductModal = ({ show, onHide, product, onSuccess }) => {
+const EditProductModal = ({ show, onHide, product, onSuccess, onCopy }) => {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [codigo, setCodigo] = useState('');
@@ -24,13 +24,11 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
   const [loadingData, setLoadingData] = useState(false);
   const [loadingSave, setLoadingSave] = useState(false);
 
-  // Cargar datos completos del producto cuando se abre el modal
   useEffect(() => {
     if (show && product?.ProductoID) {
       const loadProductData = async () => {
         setLoadingData(true);
         try {
-          // 1. Cargar Categorías, Tipos de Mueble y Estados
           const [resCats, resTipos, resEstados] = await Promise.all([
             api.get('/products/categories'),
             api.get('/products/tipos-mueble'),
@@ -40,7 +38,6 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
           setTiposMueble(resTipos.data);
           setEstadosProducto(resEstados.data);
 
-          // 2. Cargar Producto completo
           const resProd = await api.get(`/products/${product.ProductoID}`);
           const p = resProd.data;
 
@@ -51,7 +48,6 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
           setSelectedEstado(p.EstadoProductoID || '');
           setPreview(`http://localhost:5000/api/products/image/${product.ProductoID}`);
 
-          // 3. Cargar Subcategorías y seleccionar
           if (p.CategoriaID) {
             setSelectedCat(p.CategoriaID);
             const resSubs = await api.get(`/products/subcategories/${p.CategoriaID}`);
@@ -94,9 +90,7 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedSub) {
-      return Swal.fire('Atención', 'Debes seleccionar una subcategoría', 'warning');
-    }
+    if (!selectedSub) return Swal.fire('Atención', 'Debes seleccionar una subcategoría', 'warning');
 
     setLoadingSave(true);
     const formData = new FormData();
@@ -114,7 +108,28 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
       onHide();
     } catch (err) {
       console.error(err);
-      Swal.fire('Error', err.response?.data?.message || 'No se pudo actualizar el producto', 'error');
+      
+      // --- LÓGICA DE PROTECCIÓN DE EDICIÓN ---
+      if (err.response && err.response.status === 409) {
+        // Si el backend dice que está en uso (409 Conflict)
+        Swal.fire({
+          title: '⚠️ Producto Bloqueado',
+          html: `<p>${err.response.data.message}</p><strong>¿Deseas crear una copia editable?</strong>`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#28a745', // Verde para acción positiva
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Sí, Crear Copia',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed && onCopy) {
+            onHide(); // Cerramos modal editar
+            onCopy(product); // Abrimos modal de copia desde el padre
+          }
+        });
+      } else {
+        Swal.fire('Error', err.response?.data?.message || 'No se pudo actualizar el producto', 'error');
+      }
     } finally {
       setLoadingSave(false);
     }
@@ -128,13 +143,9 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
       
       <Modal.Body className="bg-light">
         {loadingData ? (
-          <div className="text-center py-5">
-            <Spinner animation="border" variant="warning" />
-            <p className="mt-2 text-muted">Cargando datos del producto...</p>
-          </div>
+          <div className="text-center py-5"><Spinner animation="border" variant="warning" /><p className="mt-2 text-muted">Cargando datos...</p></div>
         ) : (
           <Form>
-            {/* Código (Solo lectura) */}
             <div className="mb-3 p-2 bg-white border rounded text-center">
               <span className="text-muted small fw-bold text-uppercase d-block">CÓDIGO DE PRODUCTO</span>
               <span className="fs-5 fw-bold text-inst-blue">{codigo}</span>
@@ -146,36 +157,18 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
                   <Form.Label className="fw-bold text-secondary small">Categoría</Form.Label>
                   <Form.Select value={selectedCat} onChange={handleCatChange} required>
                     <option value="">Seleccionar...</option>
-                    {categorias.map(c => (
-                      <option key={c.CategoriaID} value={c.CategoriaID}>
-                        {c.CodigoCategoria || c.Nombre || `Categoría ${c.CategoriaID}`}
-                      </option>
-                    ))}
+                    {categorias.map(c => (<option key={c.CategoriaID} value={c.CategoriaID}>{c.Nombre}</option>))}
                   </Form.Select>
                 </Form.Group>
               </Col>
               <Col md={6}>
                 <Form.Group>
                   <Form.Label className="fw-bold text-secondary small">Subcategoría</Form.Label>
-                  <Form.Select 
-                    value={selectedSub} 
-                    onChange={(e) => setSelectedSub(e.target.value)}
-                    disabled={!selectedCat}
-                    required
-                  >
+                  <Form.Select value={selectedSub} onChange={(e) => setSelectedSub(e.target.value)} disabled={!selectedCat} required>
                     <option value="">Seleccionar...</option>
-                    {subcategorias.map(s => (
-                      <option key={s.SubcategoriaID} value={s.SubcategoriaID}>
-                        {s.CodigoSubcategoria || s.Nombre || `Subcategoría ${s.SubcategoriaID}`}
-                      </option>
-                    ))}
+                    {subcategorias.map(s => (<option key={s.SubcategoriaID} value={s.SubcategoriaID}>{s.Nombre}</option>))}
                   </Form.Select>
                 </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Text className="text-muted small">
-                  * Nota: Cambiar la categoría modificará la clasificación interna pero NO el código visual.
-                </Form.Text>
               </Col>
             </Row>
 
@@ -185,9 +178,7 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
                   <Form.Label className="fw-bold text-secondary small">Tipo de Mueble</Form.Label>
                   <Form.Select value={selectedTipoMueble} onChange={(e) => setSelectedTipoMueble(e.target.value)}>
                     <option value="">Seleccionar...</option>
-                    {tiposMueble.map(t => (
-                      <option key={t.TipoMuebleID} value={t.TipoMuebleID}>{t.Tipo}</option>
-                    ))}
+                    {tiposMueble.map(t => (<option key={t.TipoMuebleID} value={t.TipoMuebleID}>{t.Tipo}</option>))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -196,9 +187,7 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
                   <Form.Label className="fw-bold text-secondary small">Estado</Form.Label>
                   <Form.Select value={selectedEstado} onChange={(e) => setSelectedEstado(e.target.value)}>
                     <option value="">Seleccionar...</option>
-                    {estadosProducto.map(e => (
-                      <option key={e.EstadoProductoID} value={e.EstadoProductoID}>{e.Estado}</option>
-                    ))}
+                    {estadosProducto.map(e => (<option key={e.EstadoProductoID} value={e.EstadoProductoID}>{e.Estado}</option>))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -206,51 +195,23 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
 
             <Form.Group className="mb-3">
               <Form.Label className="fw-bold text-secondary">Nombre</Form.Label>
-              <Form.Control 
-                type="text" 
-                value={nombre} 
-                onChange={(e) => setNombre(e.target.value)} 
-                required 
-              />
+              <Form.Control type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
             </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label className="fw-bold text-secondary">Descripción</Form.Label>
-              <Form.Control 
-                as="textarea" 
-                rows={3} 
-                value={descripcion} 
-                onChange={(e) => setDescripcion(e.target.value)} 
-              />
+              <Form.Control as="textarea" rows={3} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
             </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label className="fw-bold text-secondary">Imagen</Form.Label>
               <div className="d-flex gap-3 align-items-start">
                 <div className="flex-grow-1">
-                  <Form.Control 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleFileChange} 
-                  />
-                  <Form.Text className="text-muted">
-                    Sube una nueva solo si deseas cambiarla.
-                  </Form.Text>
+                  <Form.Control type="file" accept="image/*" onChange={handleFileChange} />
+                  <Form.Text className="text-muted">Sube una nueva solo si deseas cambiarla.</Form.Text>
                 </div>
-                <div 
-                  className="border rounded d-flex align-items-center justify-content-center bg-white" 
-                  style={{ width: '100px', height: '100px', overflow: 'hidden' }}
-                >
-                  {preview ? (
-                    <Image 
-                      src={preview} 
-                      fluid 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      onError={(e) => e.target.src='https://via.placeholder.com/100?text=Error'}
-                    />
-                  ) : (
-                    <Upload size={24} className="text-muted" />
-                  )}
+                <div className="border rounded d-flex align-items-center justify-content-center bg-white" style={{ width: '100px', height: '100px', overflow: 'hidden' }}>
+                  {preview ? (<Image src={preview} fluid style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => e.target.src='https://via.placeholder.com/100?text=Error'}/>) : (<Upload size={24} className="text-muted" />)}
                 </div>
               </div>
             </Form.Group>
@@ -260,11 +221,7 @@ const EditProductModal = ({ show, onHide, product, onSuccess }) => {
       
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>Cancelar</Button>
-        <Button 
-          className="btn-institutional" 
-          onClick={handleSubmit} 
-          disabled={loadingSave || loadingData}
-        >
+        <Button className="btn-institutional" onClick={handleSubmit} disabled={loadingSave || loadingData}>
           {loadingSave ? 'Guardando...' : <><Save size={18} className="me-2" /> ACTUALIZAR</>}
         </Button>
       </Modal.Footer>

@@ -26,7 +26,8 @@ const CreateProductModal = ({ show, onHide, onSuccess, initialData = null }) => 
   useEffect(() => {
     if (show) {
       loadCatalogs();
-      // Si hay initialData, pre-llenar los campos
+      
+      // SI ES COPIA (initialData tiene datos)
       if (initialData) {
         setNombre(initialData.Nombre || '');
         setDescripcion(initialData.Descripcion || '');
@@ -34,10 +35,37 @@ const CreateProductModal = ({ show, onHide, onSuccess, initialData = null }) => 
         setSelectedSub(initialData.SubcategoriaID || '');
         setSelectedTipoMueble(initialData.TipoMuebleID || '');
         setSelectedEstado(initialData.EstadoProductoID || '');
-        // Si el producto tiene imagen, mostrar la vista previa
+        
+        // --- CORRECCIÓN: Recuperar imagen para la copia ---
         if (initialData.ProductoID) {
-          setPreview(`http://localhost:5000/api/products/image/${initialData.ProductoID}`);
+          const imageUrl = `http://localhost:5000/api/products/image/${initialData.ProductoID}`;
+          setPreview(imageUrl);
+          
+          // Truco: Descargamos la imagen y la convertimos en un File para enviarla de nuevo
+          fetch(imageUrl)
+            .then(async res => {
+                if (res.ok) {
+                    const blob = await res.blob();
+                    // Creamos un archivo real a partir de la imagen descargada
+                    const fileFromBlob = new File([blob], "imagen_copia.jpg", { type: blob.type });
+                    setFile(fileFromBlob);
+                } else {
+                    setFile(null); // Si no tiene imagen
+                }
+            })
+            .catch(err => {
+                console.log("No se pudo cargar la imagen para copiar:", err);
+                setFile(null);
+            });
+        } else {
+            setFile(null);
+            setPreview(null);
         }
+        // -----------------------------------------------
+      } else {
+          // SI ES NUEVO (Limpiar todo)
+          setFile(null);
+          setPreview(null);
       }
     }
   }, [show, initialData]);
@@ -102,6 +130,8 @@ const CreateProductModal = ({ show, onHide, onSuccess, initialData = null }) => 
     formData.append('subcategoriaId', selectedSub);
     if (selectedTipoMueble) formData.append('tipoMuebleId', selectedTipoMueble);
     if (selectedEstado) formData.append('estadoProductoId', selectedEstado);
+    
+    // Aquí ahora sí irá la imagen (ya sea la nueva que subiste o la copia que recuperamos)
     if (file) formData.append('imagen', file);
 
     try {
@@ -138,7 +168,7 @@ const CreateProductModal = ({ show, onHide, onSuccess, initialData = null }) => 
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered>
       <Modal.Header closeButton className="bg-inst-blue text-white">
-        <Modal.Title>Nuevo Producto</Modal.Title>
+        <Modal.Title>{initialData ? 'Copiar Producto' : 'Nuevo Producto'}</Modal.Title>
       </Modal.Header>
       
       <Modal.Body className="bg-light">
@@ -259,7 +289,7 @@ const CreateProductModal = ({ show, onHide, onSuccess, initialData = null }) => 
           onClick={handleSubmit} 
           disabled={loading}
         >
-          {loading ? 'Guardando...' : <><Save size={18} className="me-2" /> CREAR PRODUCTO</>}
+          {loading ? 'Guardando...' : <><Save size={18} className="me-2" /> {initialData ? 'CREAR COPIA' : 'CREAR PRODUCTO'}</>}
         </Button>
       </Modal.Footer>
     </Modal>

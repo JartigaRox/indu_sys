@@ -10,7 +10,8 @@ import {
     getEstadosProducto,
     getProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    checkProductUsage
 } from '../controllers/products.js';
 import { verifyToken, isSudo } from '../middlewares/auth.js';
 import multer from 'multer';
@@ -24,6 +25,7 @@ router.get('/categories', verifyToken, getCategories);
 router.get('/subcategories/:catId', verifyToken, getSubcategories);
 router.get('/tipos-mueble', verifyToken, getTiposMueble);
 router.get('/estados-producto', verifyToken, getEstadosProducto);
+router.get('/:id/usage', verifyToken, checkProductUsage);
 
 router.get('/', verifyToken, getProducts);
 router.get('/:id', verifyToken, getProduct);

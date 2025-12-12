@@ -53,6 +53,43 @@ const Products = () => {
     setFilteredProducts(filtered);
   }, [searchTerm, products]);
 
+  // --- NUEVA LÓGICA: Verificar uso antes de editar ---
+  const handleEditClick = async (product) => {
+    try {
+        // 1. Consultar al backend si está en uso
+        const res = await api.get(`/products/${product.ProductoID}/usage`);
+        
+        if (res.data.inUse) {
+            // 2. SI ESTÁ EN USO: Mostrar alerta y ofrecer Copiar
+            Swal.fire({
+                title: '⚠️ Producto Restringido',
+                html: `
+                    <p class="mb-2">Este producto ya forma parte de cotizaciones o pedidos históricos.</p>
+                    <p class="small text-muted">Por seguridad, no se puede editar el original para no alterar documentos pasados.</p>
+                    <strong>¿Deseas crear una copia editable?</strong>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745', // Verde
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, Crear Copia',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    handleCopy(product); // Reutilizamos tu función de copiar
+                }
+            });
+        } else {
+            // 3. SI ESTÁ LIBRE: Abrir el modal de edición normalmente
+            setSelectedProduct(product);
+            setShowEditModal(true);
+        }
+    } catch (error) {
+        console.error(error);
+        Swal.fire('Error', 'No se pudo verificar el estado del producto', 'error');
+    }
+  };
+
   const handleDelete = (id) => {
     Swal.fire({
       title: '¿Estás seguro?',
@@ -82,7 +119,6 @@ const Products = () => {
       return;
     }
 
-    // Preparar datos para exportar
     const dataToExport = products.map(p => ({
       Código: p.CodigoProducto,
       Nombre: p.Nombre,
@@ -93,24 +129,16 @@ const Products = () => {
       Estado: p.EstadoProducto || ''
     }));
 
-    // Crear hoja de Excel
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     
-    // Ajustar ancho de columnas
     ws['!cols'] = [
-      { wch: 20 }, // Código
-      { wch: 40 }, // Nombre
-      { wch: 50 }, // Descripción
-      { wch: 20 }, // Categoría
-      { wch: 30 }, // Subcategoría
-      { wch: 20 }, // Tipo de Mueble
-      { wch: 20 }  // Estado
+      { wch: 20 }, { wch: 40 }, { wch: 50 }, 
+      { wch: 20 }, { wch: 30 }, { wch: 20 }, { wch: 20 }
     ];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Productos');
     
-    // Generar archivo con fecha
     const fecha = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `productos_${fecha}.xlsx`);
     
@@ -129,7 +157,6 @@ const Products = () => {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        // Crear una copia del producto sin el ID para que se cree como nuevo
         const productCopy = {
           ...product,
           Nombre: `${product.Nombre} (Copia)`,
@@ -244,17 +271,18 @@ const Products = () => {
                         >
                             <Copy size={18} />
                         </Button>
+                        
+                        {/* --- BOTÓN EDITAR MODIFICADO (USA handleEditClick) --- */}
                         <Button 
                             variant="link" 
                             className="text-inst-blue p-0 me-3" 
-                            onClick={() => {
-                                setSelectedProduct(p);
-                                setShowEditModal(true);
-                            }}
+                            onClick={() => handleEditClick(p)}
                             title="Editar producto"
                         >
                             <Edit size={18} />
                         </Button>
+                        {/* --------------------------------------------------- */}
+
                         <Button variant="link" className="text-danger p-0" onClick={() => handleDelete(p.ProductoID)} title="Eliminar producto">
                             <Trash2 size={18} />
                         </Button>
@@ -289,6 +317,7 @@ const Products = () => {
         onSuccess={() => {
           fetchProducts();
         }}
+        onCopy={handleCopy} // <-- IMPORTANTE: Pasar la función handleCopy
       />
 
       <ImportProductsModal

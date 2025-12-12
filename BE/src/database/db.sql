@@ -923,3 +923,7 @@ SELECT * FROM TipoMuebles;
 SELECT * FROM EstadoProducto;
 
 ALTER TABLE DetalleCotizaciones ADD Descripcion NVARCHAR(MAX);
+
+SELECT * FROM EstadoProducto;
+
+UPDATE EstadoProducto SET Estado = 'EN REVISION' WHERE EstadoProductoID = 2;
