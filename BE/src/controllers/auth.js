@@ -280,38 +280,45 @@ export const getRoles = async (req, res) => {
 };
 
 // Obtener firma/sello de un usuario
+// Obtener firma/sello de un usuario
 export const getUserSignature = async (req, res) => {
+  const { id } = req.params;
+
+  // --- VALIDACIÓN DE ID BLINDADA ---
+  // Si el ID no existe, es 'undefined', 'null' o no es un número válido:
+  if (!id || isNaN(parseInt(id))) {
+    // Respondemos 404 silenciosamente para que no explote la consola
+    return res.status(404).send("ID de usuario inválido o no proporcionado");
+  }
+
   try {
     const pool = await getConnection();
     const result = await pool.request()
-      .input("id", sql.Int, req.params.id)
+      .input("id", sql.Int, parseInt(id)) // Aseguramos que sea entero
       .query("SELECT FirmaSello FROM Usuarios WHERE UsuarioID = @id");
     
     if (result.recordset.length === 0 || !result.recordset[0].FirmaSello) {
-      return res.status(404).json({ message: "Firma no encontrada" });
+      return res.status(404).send("Firma no encontrada"); // Cambiado a .send para imagen
     }
     
     const imageBuffer = result.recordset[0].FirmaSello;
     
-    // Detectar tipo de imagen por los primeros bytes
+    // Detectar tipo de imagen
     let contentType = 'image/png';
     if (imageBuffer[0] === 0xFF && imageBuffer[1] === 0xD8) {
       contentType = 'image/jpeg';
-    } else if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) {
-      contentType = 'image/png';
-    } else if (imageBuffer[0] === 0x47 && imageBuffer[1] === 0x49) {
-      contentType = 'image/gif';
     }
     
     res.set('Content-Type', contentType);
-    res.set('Cache-Control', 'no-cache');
+    res.set('Cache-Control', 'public, max-age=3600'); // Cachear imagen 1 hora
     res.send(imageBuffer);
+
   } catch (error) {
-    console.error('Error al obtener firma:', error);
-    res.status(500).json({ message: error.message });
+    // Solo logueamos errores reales de base de datos, no de validación
+    console.error('Error DB en getUserSignature:', error.message);
+    res.status(500).send("Error al obtener firma");
   }
 };
-
 // Obtener lista de usuarios vendedores (para combobox en cotizaciones)
 export const getSellers = async (req, res) => {
   try {
