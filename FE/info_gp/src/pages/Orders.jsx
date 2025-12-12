@@ -296,6 +296,14 @@ const Orders = () => {
                           <div style={{ color: textColor === '#fff' ? '#FFB6C1' : '#dc3545' }}>
                             Pendiente: ${order.PagoPendiente?.toFixed(2)}
                           </div>
+                          <div className="mt-1">
+                            <span className="fw-semibold">Forma de pago anticipo: </span>
+                            <span>{order.MetodoAnticipoNombre || 'N/A'}</span>
+                          </div>
+                          <div>
+                            <span className="fw-semibold">Forma de pago complemento: </span>
+                            <span>{order.MetodoComplementoNombre || 'N/A'}</span>
+                          </div>
                       </td>
                       <td className="text-end pe-4" style={{ backgroundColor: bgColor }}>
                           <div className="d-flex justify-content-end gap-2">

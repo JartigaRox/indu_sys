@@ -47,7 +47,11 @@ export const getOrders = async (req, res) => {
                 ISNULL(eo.Nombre, 'Sin Estado') as EstadoNombre,
                 ISNULL(eo.ColorHex, '#ffffff') as ColorHex,
                 ISNULL(u.Username, 'N/A') as ElaboradoPor,
-                ISNULL(v.Username, 'N/A') as EjecutivoVenta
+                ISNULL(v.Username, 'N/A') as EjecutivoVenta,
+                o.MetodoAnticipoID,
+                o.MetodoComplementoID,
+                ISNULL(mp1.Nombre, '') as MetodoAnticipoNombre,
+                ISNULL(mp2.Nombre, '') as MetodoComplementoNombre
             FROM Ordenes o
             INNER JOIN Cotizaciones c ON o.CotizacionID = c.CotizacionID
             INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID
@@ -55,6 +59,8 @@ export const getOrders = async (req, res) => {
             LEFT JOIN EstadosOrden eo ON o.EstadoOrdenID = eo.EstadoOrdenID
             LEFT JOIN Usuarios u ON o.UsuarioID = u.UsuarioID
             LEFT JOIN Usuarios v ON c.VendedorID = v.UsuarioID
+            LEFT JOIN MetodosPago mp1 ON o.MetodoAnticipoID = mp1.MetodoID
+            LEFT JOIN MetodosPago mp2 ON o.MetodoComplementoID = mp2.MetodoID
             ORDER BY o.FechaCreacion DESC
         `);
         res.json(result.recordset);
@@ -306,11 +312,15 @@ export const getFullOrderById = async (req, res) => {
                     eo.Nombre as EstadoNombre,
                     eo.ColorHex,
                     ef.Nombre as EstadoFacturaNombre,
-                    c.NombreQuienCotiza as UsuarioModificacion
+                    c.NombreQuienCotiza as UsuarioModificacion,
+                    mp1.Nombre as MetodoAnticipoNombre,
+                    mp2.Nombre as MetodoComplementoNombre
                 FROM Ordenes o
                 LEFT JOIN EstadosOrden eo ON o.EstadoOrdenID = eo.EstadoOrdenID
                 LEFT JOIN EstadosFactura ef ON o.EstadoFacturaID = ef.EstadoFacturaID
                 LEFT JOIN Cotizaciones c ON o.CotizacionID = c.CotizacionID
+                LEFT JOIN MetodosPago mp1 ON o.MetodoAnticipoID = mp1.MetodoID
+                LEFT JOIN MetodosPago mp2 ON o.MetodoComplementoID = mp2.MetodoID
                 WHERE o.OrdenID = @id
             `);
         

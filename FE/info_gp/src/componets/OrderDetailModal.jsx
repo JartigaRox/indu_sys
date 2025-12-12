@@ -64,6 +64,8 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
             estadoOrden: order.EstadoNombre,
             estadoFactura: order.EstadoFacturaNombre || 'N/A',
             usuarioModificacion: order.UsuarioModificacion || 'No disponible',
+            MetodoAnticipoNombre: order.MetodoAnticipoNombre,
+            MetodoComplementoNombre: order.MetodoComplementoNombre,
             items,
             empresa: {
               EmpresaID: quotationFull.EmpresaID,
@@ -197,7 +199,12 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
                               <FileText size={16} className="text-primary" />
                               <div>
                                 <div className="small fw-bold">Anticipo</div>
-                                <div className="small text-muted">${parseFloat(orderData?.pagoAnticipo || 0).toFixed(2)}</div>
+                                <div className="small text-muted">
+                                  ${parseFloat(orderData?.pagoAnticipo || 0).toFixed(2)}
+                                  {orderData?.MetodoAnticipoNombre && (
+                                    <span className="ms-2">| <span className="fw-semibold">{orderData.MetodoAnticipoNombre}</span></span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <Button 
@@ -210,14 +217,18 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
                             </Button>
                           </div>
                         )}
-                        
                         {orderData?.docComplementoPDF && (
                           <div className="d-flex justify-content-between align-items-center p-2 bg-light rounded">
                             <div className="d-flex align-items-center gap-2">
                               <FileText size={16} className="text-success" />
                               <div>
                                 <div className="small fw-bold">Complemento</div>
-                                <div className="small text-muted">${parseFloat(orderData?.pagoComplemento || 0).toFixed(2)}</div>
+                                <div className="small text-muted">
+                                  ${parseFloat(orderData?.pagoComplemento || 0).toFixed(2)}
+                                  {orderData?.MetodoComplementoNombre && (
+                                    <span className="ms-2">| <span className="fw-semibold">{orderData.MetodoComplementoNombre}</span></span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <Button 

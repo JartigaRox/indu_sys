@@ -876,4 +876,48 @@ SELECT * FROM DetalleCotizaciones;
 SELECT * FROM Ordenes;
 
 DELETE FROM Cotizaciones
-DBCC CHECKIDENT ('Ordenes', RESEED, 0);
+DBCC CHECKIDENT ('EstadosFactura', RESEED, 0);
+
+
+SELECT * FROM MetodosPago;
+SELECT * FROM EstadosOrden;
+SELECT * FROM EstadosFactura;
+
+
+DELETE FROM EstadosFactura WHERE EstadoFacturaID IN (4,5,6,7,8,9); 
+
+SELECT * FROM Roles;
+SELECT * FROM Usuarios;
+SELECT * FROM Departamentos;
+DELETE FROM Departamentos WHERE DepartamentoID IN (15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42);
+DBCC CHECKIDENT ('Departamentos', RESEED, 0); 
+SELECT * FROM Municipios;
+WITH Dups AS (
+  SELECT MunicipioID, Nombre, DepartamentoID,
+         ROW_NUMBER() OVER (PARTITION BY Nombre, DepartamentoID ORDER BY MunicipioID) AS rn
+  FROM Municipios
+)
+DELETE FROM Dups WHERE rn > 1;
+DBCC CHECKIDENT ('Municipios', RESEED, 0); 
+SELECT * FROM Distritos;
+WITH Dups AS (
+  SELECT DistritoID, Nombre, MunicipioID,
+         ROW_NUMBER() OVER (PARTITION BY Nombre, MunicipioID ORDER BY DistritoID) AS rn
+  FROM Distritos
+)
+DELETE FROM Dups WHERE rn > 1;
+DBCC CHECKIDENT ('Distritos', RESEED, 0);
+SELECT * FROM Productos;
+SELECT * FROM Clientes;
+SELECT * FROM Cotizaciones;
+SELECT * FROM DetalleCotizaciones;
+SELECT * FROM Empresas;
+SELECT * FROM Categorias;
+SELECT * FROM Subcategorias;
+SELECT * FROM MetodosPago;
+SELECT * FROM EstadosFactura;
+SELECT * FROM EstadosOrden;
+SELECT * FROM Ordenes;
+SELECT * FROM TiposVendedor;
+SELECT * FROM TipoMuebles;
+SELECT * FROM EstadoProducto;
