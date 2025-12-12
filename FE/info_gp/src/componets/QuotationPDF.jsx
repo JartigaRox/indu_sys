@@ -8,16 +8,22 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   const total = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
   const mainColor = empresa.EmpresaID === 1 ? '#008CB4' : '#D4AF37';
   
+  // Generar timestamp único para refrescar la imagen de la firma si cambia
   const imageTimestamp = useMemo(() => Date.now(), [data.vendedor?.UsuarioID]);
 
-  // ... (HeaderStyleA, HeaderStyleB, FooterStyleA, FooterStyleB se mantienen igual) ...
-  // Para ahorrar espacio, solo pongo el HeaderA como referencia, pero mantén todos tus estilos
+  // --- ESTILOS DE ENCABEZADO ---
   const HeaderStyleA = () => (
     <div className="d-flex justify-content-between align-items-start pb-2 mb-3" style={{ borderBottom: '2px solid #009FE3' }}>
       <div className="d-flex flex-column">
         <div className="d-flex align-items-center mb-2">
           <div>
-            <img src="/src/assets/IndusL.png" alt="Logo Info GP" style={{ width: '200px', height: 'auto', objectFit: 'contain' }} />
+            {/* Logo Empresa 1 */}
+            <img 
+              src="/src/assets/IndusL.png" 
+              alt="Logo Info GP" 
+              style={{ width: '200px', height: 'auto', objectFit: 'contain' }} 
+              onError={(e) => e.target.style.display = 'none'}
+            />
           </div>
         </div>
         <h1 style={{ fontFamily: 'Times New Roman, serif', fontSize: '18px', color: '#222', margin: '0', textAlign: 'justify' }}>{empresa.Nombre}</h1>
@@ -29,13 +35,19 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
       </div>
     </div>
   );
-  // ... Asegúrate de mantener HeaderStyleB, FooterStyleA y FooterStyleB aquí ...
+
   const HeaderStyleB = () => (
     <div className="d-flex justify-content-between align-items-start pb-2 mb-3" style={{ borderBottom: '2px solid #D4AF37' }}>
       <div className="d-flex flex-column">
         <div className="d-flex align-items-center mb-2">
           <div>
-            <img src="/src/assets/PoligL.png" alt="Logo Info GP" style={{ width: '200px', height: 'auto', objectFit: 'contain' }} />
+            {/* Logo Empresa 2 */}
+            <img 
+              src="/src/assets/PoligL.png" 
+              alt="Logo Info GP" 
+              style={{ width: '200px', height: 'auto', objectFit: 'contain' }} 
+              onError={(e) => e.target.style.display = 'none'}
+            />
           </div>
         </div>
         <h1 style={{ fontFamily: 'Times New Roman, serif', fontSize: '18px', color: '#222', margin: '0', textAlign: 'justify' }}>{empresa.Nombre}</h1>
@@ -47,6 +59,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
     </div>
   );
 
+  // --- ESTILOS DE PIE DE PÁGINA ---
   const FooterStyleA = () => (
     <div className="pt-2 border-top w-100" style={{ borderColor: '#005689', borderWidth: '3px' }}>
       <div className="d-flex justify-content-center text-dark mb-1" style={{ fontSize: '9px' }}>
@@ -76,8 +89,13 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   );
 
   return (
-    <div ref={ref} className="bg-white p-4 pdf-container" style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', color: 'black', textTransform: 'uppercase' }}>
+    <div 
+      ref={ref} 
+      className="bg-white p-4 pdf-container"
+      style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', color: 'black', textTransform: 'uppercase' }}
+    >
       <table className="print-table w-100">
+        {/* 1. HEADER (Espacio reservado) */}
         <thead>
           <tr>
             <td>
@@ -87,11 +105,14 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
             </td>
           </tr>
         </thead>
+
+        {/* 2. CONTENIDO PRINCIPAL */}
         <tbody>
           <tr>
             <td>
               <div className="content-wrapper px-2">
                 
+                {/* Info Cliente */}
                 <div className="row mb-4 avoid-break" style={empresa.EmpresaID === 2 ? { marginTop: '-40px' } : {}}>
                   <div className="col-12"><h6 className="fw-bold border-bottom pb-1" style={{ color: mainColor, borderColor: mainColor }}>CLIENTE</h6></div>
                   <div className="col-8">
@@ -112,39 +133,77 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                   </div>
                 </div>
 
+                {/* Tabla de Items */}
                 {items.map((item, i) => {
-                  // --- FIX CRÍTICO: Asegurar que sea String y limpiar duplicados ---
+                  // --- LÓGICA ANTI-DUPLICADOS ---
                   const rawDesc = item.descripcion ? String(item.descripcion) : "";
-                  // Eliminamos líneas vacías y convertimos a array seguro
-                  const descLines = rawDesc.split('\n').filter(line => line && line.trim() !== '');
-                  // ---------------------------------------------------------------
+                  // 1. Dividir por saltos de línea
+                  // 2. Limpiar espacios
+                  // 3. Filtrar líneas vacías
+                  // 4. Usar Set para eliminar duplicados exactos
+                  const descLines = [
+                    ...new Set(
+                      rawDesc.split('\n')
+                      .map(line => line.trim())
+                      .filter(line => line !== '')
+                    )
+                  ];
+                  // ------------------------------
 
                   return (
                     <table key={i} className="w-100 mb-4" style={{ border: '2px solid black', borderCollapse: 'collapse', pageBreakInside: 'avoid' }}>
                       <tbody>
+                        {/* Fila 1: Headers */}
                         <tr>
-                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '8%', padding: '8px', fontSize: '11px' }}>CAN</td>
-                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '15%', padding: '8px', fontSize: '11px' }}>CÓDIGO</td>
-                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '37%', padding: '8px', fontSize: '11px' }}>NOMBRE ÍTEM</td>
+                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '8%', padding: '8px', fontSize: '11px' }}>
+                            CAN
+                          </td>
+                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '15%', padding: '8px', fontSize: '11px' }}>
+                            CÓDIGO
+                          </td>
+                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '37%', padding: '8px', fontSize: '11px' }}>
+                            NOMBRE ÍTEM
+                          </td>
                           <td rowSpan="3" className="text-center align-middle" style={{ border: '1px solid black', width: '40%', padding: '8px' }}>
                             {item.imagenURL ? (
-                              <img src={item.imagenURL} alt={item.nombre} style={{ width: '100%', maxWidth: '200px', height: 'auto', maxHeight: '200px', objectFit: 'contain' }} />
-                            ) : (<div className="text-muted" style={{ fontSize: '11px' }}>N/A</div>)}
+                              <img 
+                                src={item.imagenURL} 
+                                alt={item.nombre} 
+                                style={{ 
+                                  width: '100%',
+                                  maxWidth: '200px',
+                                  height: 'auto',
+                                  maxHeight: '200px',
+                                  objectFit: 'contain'
+                                }}
+                                onError={(e) => e.target.style.display = 'none'}
+                              />
+                            ) : (
+                              <div className="text-muted" style={{ fontSize: '11px' }}>N/A</div>
+                            )}
                           </td>
                         </tr>
+                        
+                        {/* Fila 2: Valores */}
                         <tr>
-                          <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>{item.cantidad}</td>
-                          <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>{item.codigo || 'N/A'}</td>
-                          <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>{item.nombre || 'N/A'}</td>
+                          <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
+                            {item.cantidad}
+                          </td>
+                          <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
+                            {item.codigo || 'N/A'}
+                          </td>
+                          <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
+                            {item.nombre || 'N/A'}
+                          </td>
                         </tr>
                         
-                        {/* Descripción Blindada */}
+                        {/* Fila 3: Descripción (Limpia) */}
                         <tr>
                           <td colSpan="3" className="align-top" style={{ border: '1px solid black', padding: '12px' }}>
                             {descLines.length > 0 ? (
                               <ul className="mb-0 ps-3" style={{ fontSize: '10px', lineHeight: '1.4' }}>
                                 {descLines.map((line, idx) => (
-                                  <li key={idx}>{line.trim().toUpperCase()}</li>
+                                  <li key={idx}>{line.toUpperCase()}</li>
                                 ))}
                               </ul>
                             ) : (
@@ -155,9 +214,14 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                           </td>
                         </tr>
                         
+                        {/* Fila 4: Totales */}
                         <tr>
-                          <td colSpan="2" className="fw-bold text-start ps-3 align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>PRECIO UNITARIO</td>
-                          <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>${parseFloat(item.precio || 0).toFixed(2)}</td>
+                          <td colSpan="2" className="fw-bold text-start ps-3 align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
+                            PRECIO UNITARIO
+                          </td>
+                          <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
+                            ${parseFloat(item.precio || 0).toFixed(2)}
+                          </td>
                           <td className="align-middle" style={{ border: '1px solid black', padding: '8px' }}>
                             <div className="d-flex justify-content-between align-items-center px-2">
                               <span className="fw-bold" style={{ fontSize: '11px' }}>PRECIO TOTAL</span>
@@ -170,6 +234,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                   );
                 })}
 
+                {/* Footer del Contenido: Total General */}
                 <div className="mt-4">
                     <div className="d-flex justify-content-end mb-5">
                         <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: mainColor, minWidth: '250px', display:'flex', justifyContent:'space-between', fontSize: '14px' }}>
@@ -179,9 +244,11 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                     </div>
                 </div>
 
+                {/* Términos, Firmas y Sellos */}
                 <div className="avoid-break">
                     <div className="border rounded p-3 bg-light text-secondary" style={{ fontSize: '10px' }}>
                         <div className="row">
+                            {/* Términos y Condiciones */}
                             <div className="col-8">
                                 <h6 className="fw-bold mb-2 text-dark">TÉRMINOS Y CONDICIONES:</h6>
                                 <ul className="ps-3 mb-0" style={{ listStyleType: 'circle' }}>
@@ -197,24 +264,63 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                                     <li>Registro: {empresa.NRC}</li>
                                 </ul>
                             </div>
-                            <div className="col-4 text-center d-flex flex-column justify-content-end align-items-center" style={{ height: '120px' }}>
-                                {data.vendedor?.UsuarioID ? (
-                                  <div className="mb-2" style={{ minHeight: '60px' }}>
-                                    <img 
-                                      src={`http://localhost:5000/api/auth/users/${data.vendedor.UsuarioID}/signature?t=${imageTimestamp}`}
-                                      alt="Firma"
-                                      style={{ maxWidth: '250px', maxHeight: '100px', objectFit: 'contain' }}
-                                      onError={(e) => { e.target.style.display = 'none'; }}
-                                    />
-                                  </div>
-                                ) : (
-                                  <div className="mb-2" style={{ minHeight: '60px' }}></div>
-                                )}
-                                <div style={{ borderBottom: '1px solid #999', width: '80%', marginBottom: '5px' }}></div>
-                                <span className="fw-bold text-uppercase small">Firma y Sello Autorizado</span>
-                                <span className="small text-muted">{data.vendedor?.Username || user.username}</span>
-                                <span className="small text-muted">{empresa.Celular}</span>
-                                <span className="small text-muted" style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span>
+                            
+                            {/* ÁREA DE FIRMAS Y SELLOS SUPERPUESTOS */}
+                            <div className="col-4 text-center" style={{ height: '120px', position: 'relative' }}>
+                                
+                                {/* --- CAPA 1: SELLO DE LA EMPRESA (FONDO) --- */}
+                                <div style={{ 
+                                    position: 'absolute', 
+                                    top: '-20px', 
+                                    left: '0', 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    display: 'flex', 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center', 
+                                    zIndex: 0, 
+                                    opacity: 0.8 
+                                }}>
+                                    {empresa.EmpresaID === 1 ? (
+                                      /* Sello Empresa 1 */
+                                      <img 
+                                        src="../../src/assets/gp.png" 
+                                        alt="Sello Empresa 1" 
+                                        style={{ width: '140px', objectFit: 'contain' }} 
+                                        onError={(e) => e.target.style.display = 'none'}
+                                      />
+                                    ) : (
+                                      /* Sello Empresa 2 */
+                                      <img 
+                                        src="../../src/assets/OP.png" 
+                                        alt="Sello Empresa 2" 
+                                        style={{ width: '140px', objectFit: 'contain' }} 
+                                        onError={(e) => e.target.style.display = 'none'}
+                                      />
+                                    )}
+                                </div>
+
+                                {/* --- CAPA 2: FIRMA DEL USUARIO (FRENTE) --- */}
+                                <div className="d-flex flex-column justify-content-end align-items-center h-100" style={{ position: 'relative', zIndex: 1 }}>
+                                    {data.vendedor?.UsuarioID ? (
+                                      <div className="mb-2" style={{ minHeight: '60px', display:'flex', alignItems:'flex-end' }}>
+                                        <img 
+                                          src={`http://localhost:5000/api/auth/users/${data.vendedor.UsuarioID}/signature?t=${imageTimestamp}`}
+                                          alt="Firma"
+                                          style={{ maxWidth: '200px', maxHeight: '80px', objectFit: 'contain' }}
+                                          onError={(e) => { e.target.style.display = 'none'; }}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="mb-2" style={{ minHeight: '60px' }}></div>
+                                    )}
+                                    
+                                    <div style={{ borderBottom: '1px solid #999', width: '80%', marginBottom: '5px' }}></div>
+                                    <span className="fw-bold text-uppercase small">Firma y Sello Autorizado</span>
+                                    <span className="small text-muted">{data.vendedor?.Username || user.username}</span>
+                                    <span className="small text-muted">{empresa.Celular}</span>
+                                    <span className="small text-muted" style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -224,10 +330,18 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
             </td>
           </tr>
         </tbody>
+
+        {/* 3. FOOTER SPACE (Para que no se monte sobre el footer fijo) */}
         <tfoot>
-          <tr><td><div className="footer-space"></div></td></tr>
+          <tr>
+            <td>
+              <div className="footer-space"></div>
+            </td>
+          </tr>
         </tfoot>
       </table>
+
+      {/* 4. FOOTER FIXED (Fijo en todas las páginas) */}
       <div className="print-footer-fixed d-flex align-items-end justify-content-center pb-3">
          {empresa.EmpresaID === 1 ? <FooterStyleA /> : <FooterStyleB />}
       </div>

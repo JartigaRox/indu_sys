@@ -201,7 +201,7 @@ const CreateUserModal = ({ show, onHide, onSave }) => {
 
                     {/* FIRMA Y SELLO */}
                     <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold text-secondary">Firma y Sello (Imagen)</Form.Label>
+                        <Form.Label className="fw-bold text-secondary">Firma (Imagen)</Form.Label>
                         <div className="input-group">
                             <span className="input-group-text bg-light border-end-0">
                                 <FileImage size={18} className="text-muted" />
@@ -214,7 +214,7 @@ const CreateUserModal = ({ show, onHide, onSave }) => {
                             />
                         </div>
                         <Form.Text className="text-muted">
-                            Sube una imagen de la firma y sello para las cotizaciones
+                            Sube una imagen de la firma para las cotizaciones
                         </Form.Text>
                         {firmaPreview && (
                             <div className="mt-3 text-center">
