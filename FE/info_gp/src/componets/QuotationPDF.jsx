@@ -5,12 +5,12 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   if (!data || !data.empresa) return null;
 
   const { cliente, items, user, numeroCotizacion, fecha, empresa } = data;
-  
+
   // Calcular total
   const total = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
-  
+
   const mainColor = empresa.EmpresaID === 1 ? '#008CB4' : '#D4AF37';
-  
+
   // Generar timestamp único para refrescar la imagen de la firma si cambia
   const imageTimestamp = useMemo(() => Date.now(), [data.vendedor?.UsuarioID]);
 
@@ -30,10 +30,10 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
         <div className="d-flex align-items-center mb-2">
           <div>
             {/* Logo Empresa 1 */}
-            <img 
-              src="/src/assets/IndusL.png" 
-              alt="Logo Info GP" 
-              style={{ width: '200px', height: 'auto', objectFit: 'contain' }} 
+            <img
+              src="/src/assets/IndusL.png"
+              alt="Logo Info GP"
+              style={{ width: '200px', height: 'auto', objectFit: 'contain' }}
               onError={(e) => e.target.style.display = 'none'}
             />
           </div>
@@ -54,10 +54,10 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
         <div className="d-flex align-items-center mb-2">
           <div>
             {/* Logo Empresa 2 */}
-            <img 
-              src="/src/assets/PoligL.png" 
-              alt="Logo Info GP" 
-              style={{ width: '200px', height: 'auto', objectFit: 'contain' }} 
+            <img
+              src="/src/assets/PoligL.png"
+              alt="Logo Info GP"
+              style={{ width: '200px', height: 'auto', objectFit: 'contain' }}
               onError={(e) => e.target.style.display = 'none'}
             />
           </div>
@@ -75,13 +75,13 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   const FooterStyleA = () => (
     <div className="pt-2 border-top w-100" style={{ borderColor: '#005689', borderWidth: '3px' }}>
       <div className="d-flex justify-content-center text-dark mb-1" style={{ fontSize: '9px' }}>
-         <div className="d-flex align-items-center"><FaMapMarkerAlt className="me-1" style={{ minWidth: '12px' }}/> <span>{empresa.Direccion}</span></div>
+        <div className="d-flex align-items-center"><FaMapMarkerAlt className="me-1" style={{ minWidth: '12px' }} /> <span>{empresa.Direccion}</span></div>
       </div>
       <div className="d-flex flex-wrap justify-content-center gap-3 text-dark" style={{ fontSize: '10px' }}>
-         <div className="d-flex align-items-center"><FaPhoneAlt className="me-1"/> {empresa.Telefono}</div>
-         <div className="d-flex align-items-center"><FaWhatsapp className="me-1"/> {empresa.Celular}</div>
-         <div className="d-flex align-items-center"><FaEnvelope className="me-1"/> <span style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span></div>
-         <div className="d-flex align-items-center"><FaGlobe className="me-1"/> <span style={{textTransform:'lowercase'}}> {empresa.PaginaWeb}</span></div>
+        <div className="d-flex align-items-center"><FaPhoneAlt className="me-1" /> {empresa.Telefono}</div>
+        <div className="d-flex align-items-center"><FaWhatsapp className="me-1" /> {empresa.Celular}</div>
+        <div className="d-flex align-items-center"><FaEnvelope className="me-1" /> <span style={{ textTransform: 'lowercase' }}>{empresa.CorreoElectronico}</span></div>
+        <div className="d-flex align-items-center"><FaGlobe className="me-1" /> <span style={{ textTransform: 'lowercase' }}> {empresa.PaginaWeb}</span></div>
       </div>
     </div>
   );
@@ -89,20 +89,20 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   const FooterStyleB = () => (
     <div className="pt-2 border-top w-100" style={{ borderColor: '#D4AF37', borderWidth: '3px' }}>
       <div className="d-flex justify-content-center text-dark mb-1" style={{ fontSize: '9px' }}>
-         <div className="d-flex align-items-center"><FaMapMarkerAlt className="me-1" style={{ minWidth: '12px' }}/> <span>{empresa.Direccion}</span></div>
+        <div className="d-flex align-items-center"><FaMapMarkerAlt className="me-1" style={{ minWidth: '12px' }} /> <span>{empresa.Direccion}</span></div>
       </div>
       <div className="d-flex flex-wrap justify-content-center gap-3 text-dark" style={{ fontSize: '10px' }}>
-         <div className="d-flex align-items-center"><FaPhoneAlt className="me-1"/> {empresa.Telefono}</div>
-         <div className="d-flex align-items-center"><FaWhatsapp className="me-1"/> {empresa.Celular}</div>
-         <div className="d-flex align-items-center"><FaEnvelope className="me-1"/> <span style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span></div>
-         <div className="d-flex align-items-center"><FaGlobe className="me-1"/> <span style={{textTransform:'lowercase'}}> {empresa.PaginaWeb}</span></div>
+        <div className="d-flex align-items-center"><FaPhoneAlt className="me-1" /> {empresa.Telefono}</div>
+        <div className="d-flex align-items-center"><FaWhatsapp className="me-1" /> {empresa.Celular}</div>
+        <div className="d-flex align-items-center"><FaEnvelope className="me-1" /> <span style={{ textTransform: 'lowercase' }}>{empresa.CorreoElectronico}</span></div>
+        <div className="d-flex align-items-center"><FaGlobe className="me-1" /> <span style={{ textTransform: 'lowercase' }}> {empresa.PaginaWeb}</span></div>
       </div>
     </div>
   );
 
   return (
-    <div 
-      ref={ref} 
+    <div
+      ref={ref}
       className="bg-white p-4 pdf-container"
       style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', color: 'black', textTransform: 'uppercase' }}
     >
@@ -123,7 +123,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
           <tr>
             <td>
               <div className="content-wrapper px-2">
-                
+
                 {/* Info Cliente */}
                 <div className="row mb-4 avoid-break" style={empresa.EmpresaID === 2 ? { marginTop: '-40px' } : {}}>
                   <div className="col-12"><h6 className="fw-bold border-bottom pb-1" style={{ color: mainColor, borderColor: mainColor }}>CLIENTE</h6></div>
@@ -152,8 +152,8 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                   const descLines = [
                     ...new Set(
                       rawDesc.split('\n')
-                      .map(line => line.trim())
-                      .filter(line => line !== '')
+                        .map(line => line.trim())
+                        .filter(line => line !== '')
                     )
                   ];
                   // ------------------------------
@@ -174,10 +174,10 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                           </td>
                           <td rowSpan="3" className="text-center align-middle" style={{ border: '1px solid black', width: '40%', padding: '8px' }}>
                             {item.imagenURL ? (
-                              <img 
-                                src={item.imagenURL} 
-                                alt={item.nombre} 
-                                style={{ 
+                              <img
+                                src={item.imagenURL}
+                                alt={item.nombre}
+                                style={{
                                   width: '100%',
                                   maxWidth: '200px',
                                   height: 'auto',
@@ -191,7 +191,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                             )}
                           </td>
                         </tr>
-                        
+
                         {/* Fila 2: Valores */}
                         <tr>
                           <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
@@ -204,7 +204,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                             {item.nombre || 'N/A'}
                           </td>
                         </tr>
-                        
+
                         {/* Fila 3: Descripción (Limpia) */}
                         <tr>
                           <td colSpan="3" className="align-top" style={{ border: '1px solid black', padding: '12px' }}>
@@ -221,7 +221,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                             )}
                           </td>
                         </tr>
-                        
+
                         {/* Fila 4: Totales */}
                         <tr>
                           <td colSpan="2" className="fw-bold text-start ps-3 align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
@@ -244,91 +244,96 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
 
                 {/* Footer del Contenido: Total General */}
                 <div className="mt-4">
-                    <div className="d-flex justify-content-end mb-5">
-                        <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: mainColor, minWidth: '250px', display:'flex', justifyContent:'space-between', fontSize: '14px' }}>
-                        <span>TOTAL DE LA COTIZACION:  </span>
-                        <span> <strong>${formatNumber(total)}</strong></span>
-                        </div>
+                  <div className="d-flex justify-content-end mb-5">
+                    <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: mainColor, minWidth: '250px', display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                      <span>TOTAL DE LA COTIZACION:  </span>
+                      <span> <strong>${formatNumber(total)}</strong></span>
                     </div>
+                  </div>
                 </div>
 
                 {/* Términos, Firmas y Sellos */}
                 <div className="avoid-break">
-                    <div className="border rounded p-3 bg-light text-secondary" style={{ fontSize: '10px' }}>
-                        <div className="row">
-                            {/* Términos y Condiciones */}
-                            <div className="col-8">
-                                <h6 className="fw-bold mb-2 text-dark">TÉRMINOS Y CONDICIONES:</h6>
-                                <ul className="ps-3 mb-0" style={{ listStyleType: 'circle' }}>
-                                    <li className="mb-1"><strong>NOTA:</strong> EN CASO DE DETECTARSE ERRORES ARITMÉTICOS EN LOS CÁLCULOS, LA COTIZACIÓN SERÁ CORREGIDA Y ACTUALIZADA DE INMEDIATO, NOTIFICANDO AL CLIENTE. LOS VALORES CORRECTOS PREVALECERÁN SOBRE CUALQUIER ERROR TIPOGRÁFICO O DE CÁLCULO. LA ACEPTACIÓN DE ESTA COTIZACIÓN IMPLICA EL RECONOCIMIENTO DE ESTA CONDICIÓN. LAS IMÁGENES SON DE FIN ILUSTRATIVO, SUJETAS A CAMBIOS.</li>
-                                    <li className="mb-1"><strong>GARANTÍA:</strong> 1 AÑO POR DESPERFECTO DE FABRICACIÓN VALIDEZ DE LA OFERTA: <strong>7 DÍAS CALENDARIO</strong> PRECIO INCLUYE IVA Y TRANSPORTE</li>
-                                    <li className="mb-1"><strong>CONDICIÓN DE PAGO: CHEQUE O AL CONTADO</strong></li>
-                                    <li>CHEQUE A NOMBRE DE: JEREMÍAS DE JESÚS ARTIGA DE PAZ</li>
-                                    <li>RAZÓN SOCIAL: JEREMÍAS DE JESÚS ARTIGA DE PAZ</li>
-                                    <li className="mb-1"><strong>CONTACTO DE LA EMPRESA:</strong></li>
-                                    <li>DIRECCIÓN: CARRETERA A SONSONATE, KM. 24, EDIFICIO GP DON BOSCO, DISTRITO DE COLON, MUNICIPIO DE LA LIBERTAD OESTE</li>
-                                    <li>TELÉFONO:{empresa.Telefono} </li>
-                                    <li>NIT: {empresa.NIT}</li>
-                                    <li>Registro: {empresa.NRC}</li>
-                                </ul>
-                            </div>
-                            
-                            {/* ÁREA DE FIRMAS Y SELLOS SUPERPUESTOS */}
-                            <div className="col-4 text-center" style={{ height: '230px', position: 'relative' }}>
-                                
-                                {/* --- CAPA 1: SELLO (Posicionado en la esquina o detrás) --- */}
-                                <div style={{ 
-                                    position: 'absolute', 
-                                    // Configuración "En la esquina" superior derecha
-                                    top: '-5px', 
-                                    right: '20px', 
-                                    // Configuración alternativa "Centrado" (descomentar si prefieres centrado)
-                                    // left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center',
-                                    
-                                    zIndex: 0, // Detrás de la firma (la tinta de la firma suele estar sobre el sello)
-                                    opacity: 0.8
-                                }}>
-                                    {empresa.EmpresaID === 1 ? (
-                                      <img 
-                                        src="../../src/assets/SelloInds.jpg" 
-                                        alt="Sello Empresa 1" 
-                                        style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }} 
-                                        onError={(e) => e.target.style.display = 'none'}
-                                      />
-                                    ) : (
-                                      <img 
-                                        src="../../src/assets/SelloPlgn.jpg" 
-                                        alt="Sello Empresa 2" 
-                                        style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }} 
-                                        onError={(e) => e.target.style.display = 'none'}
-                                      />
-                                    )}
-                                </div>
+                  <div className="border rounded p-3 bg-white text-secondary" style={{ fontSize: '10px' }}>
+                    <div className="row">
+                      {/* Términos y Condiciones */}
+                      <div className="col-8">
+                        <h6 className="fw-bold mb-2 text-dark">TÉRMINOS Y CONDICIONES:</h6>
+                        <ul className="ps-3 mb-0" style={{ listStyleType: 'circle' }}>
+                          <li className="mb-1"><strong>NOTA:</strong> EN CASO DE DETECTARSE ERRORES ARITMÉTICOS EN LOS CÁLCULOS, LA COTIZACIÓN SERÁ CORREGIDA Y ACTUALIZADA DE INMEDIATO, NOTIFICANDO AL CLIENTE. LOS VALORES CORRECTOS PREVALECERÁN SOBRE CUALQUIER ERROR TIPOGRÁFICO O DE CÁLCULO. LA ACEPTACIÓN DE ESTA COTIZACIÓN IMPLICA EL RECONOCIMIENTO DE ESTA CONDICIÓN. LAS IMÁGENES SON DE FIN ILUSTRATIVO, SUJETAS A CAMBIOS.</li>
+                          <li className="mb-1"><strong>GARANTÍA:</strong> 1 AÑO POR DESPERFECTO DE FABRICACIÓN VALIDEZ DE LA OFERTA: <strong>7 DÍAS CALENDARIO</strong> PRECIO INCLUYE IVA Y TRANSPORTE</li>
+                          <li className="mb-1"><strong>CONDICIÓN DE PAGO: CHEQUE O AL CONTADO</strong></li>
+                          <li>CHEQUE A NOMBRE DE: JEREMÍAS DE JESÚS ARTIGA DE PAZ</li>
+                          <li>RAZÓN SOCIAL: JEREMÍAS DE JESÚS ARTIGA DE PAZ</li>
+                          <li className="mb-1"><strong>CONTACTO DE LA EMPRESA:</strong></li>
+                          <li>DIRECCIÓN: CARRETERA A SONSONATE, KM. 24, EDIFICIO GP DON BOSCO, DISTRITO DE COLON, MUNICIPIO DE LA LIBERTAD OESTE</li>
+                          <li>TELÉFONO:{empresa.Telefono} </li>
+                          <li>NIT: {empresa.NIT}</li>
+                          <li>Registro: {empresa.NRC}</li>
+                        </ul>
+                      </div>
 
-                                {/* --- CAPA 2: FIRMA DEL USUARIO (Frente) --- */}
-                                <div className="d-flex flex-column justify-content-end align-items-center h-100" style={{ position: 'relative', zIndex: 1 }}>
-                                    {data.vendedor?.UsuarioID ? (
-                                      <div className="mb-2" style={{ minHeight: '60px', display:'flex', alignItems:'flex-end' }}>
-                                        <img 
-                                          src={`http://localhost:5000/api/auth/users/${data.vendedor.UsuarioID}/signature?t=${imageTimestamp}`}
-                                          alt="Firma"
-                                          style={{ maxWidth: '200px', maxHeight: '80px', objectFit: 'contain' }}
-                                          onError={(e) => { e.target.style.display = 'none'; }}
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div className="mb-2" style={{ minHeight: '60px' }}></div>
-                                    )}
-                                    
-                                    <div style={{ borderBottom: '1px solid #999', width: '80%', marginBottom: '5px' }}></div>
-                                    <span className="fw-bold text-uppercase small">Firma y Sello Autorizado</span>
-                                    <span className="small text-muted">{data.vendedor?.Username || user.username}</span>
-                                    <span className="small text-muted">{empresa.Celular}</span>
-                                    <span className="small text-muted" style={{textTransform:'lowercase'}}>{empresa.CorreoElectronico}</span>
-                                </div>
-                            </div>
+                      {/* ÁREA DE FIRMAS Y SELLOS SUPERPUESTOS */}
+                      <div className="col-4 text-center" style={{ height: '230px', position: 'relative' }}>
+
+                        {/* --- CAPA 1: SELLO (Posicionado en la esquina o detrás) --- */}
+                        <div style={{
+                          position: 'absolute',
+                          // Configuración "En la esquina" superior derecha
+                          top: '-5px',
+                          right: '20px',
+                          // Configuración alternativa "Centrado" (descomentar si prefieres centrado)
+                          // left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center',
+
+                          zIndex: 0, // Detrás de la firma (la tinta de la firma suele estar sobre el sello)
+                          opacity: 0.8
+                        }}>
+                          {empresa.EmpresaID === 1 ? (
+                            <img
+                              src="../../src/assets/SelloInds.jpg"
+                              alt="Sello Empresa 1"
+                              style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }}
+                              onError={(e) => e.target.style.display = 'none'}
+                            />
+                          ) : (
+                            <img
+                              src="../../src/assets/SelloPlgn.jpg"
+                              alt="Sello Empresa 2"
+                              style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }}
+                              onError={(e) => e.target.style.display = 'none'}
+                            />
+                          )}
                         </div>
+
+                        {/* --- CAPA 2: FIRMA DEL USUARIO (Frente) --- */}
+                        <div className="d-flex flex-column justify-content-end align-items-center h-100" style={{ position: 'relative', zIndex: 1 }}>
+                          {data.vendedor?.UsuarioID ? (
+                            <div className="mb-2" style={{ minHeight: '60px', display: 'flex', alignItems: 'flex-end' }}>
+                              <img
+                                // AGREGAR ESTA LÍNEA (key):
+                                key={data.vendedor.UsuarioID}
+
+                                src={`http://localhost:5000/api/auth/users/${data.vendedor.UsuarioID}/signature?t=${imageTimestamp}`}
+                                alt="Firma"
+                                style={{ maxWidth: '200px', maxHeight: '80px', objectFit: 'contain' }}
+                                // Al cambiar de usuario, React creará una imagen nueva, 
+                                // eliminando el estilo 'display: none' que haya puesto el onError anterior.
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="mb-2" style={{ minHeight: '60px' }}></div>
+                          )}
+
+                          <div style={{ borderBottom: '1px solid #999', width: '80%', marginBottom: '5px' }}></div>
+                          <span className="fw-bold text-uppercase small">Firma y Sello Autorizado</span>
+                          <span className="small text-muted">{data.vendedor?.Username || user.username}</span>
+                          <span className="small text-muted">{empresa.Celular}</span>
+                          <span className="small text-muted" style={{ textTransform: 'lowercase' }}>{empresa.CorreoElectronico}</span>
+                        </div>
+                      </div>
                     </div>
+                  </div>
                 </div>
 
               </div>
@@ -348,7 +353,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
 
       {/* 4. FOOTER FIXED (Fijo en todas las páginas) */}
       <div className="print-footer-fixed d-flex align-items-end justify-content-center pb-3">
-         {empresa.EmpresaID === 1 ? <FooterStyleA /> : <FooterStyleB />}
+        {empresa.EmpresaID === 1 ? <FooterStyleA /> : <FooterStyleB />}
       </div>
     </div>
   );
