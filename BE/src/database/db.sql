@@ -931,3 +931,6 @@ UPDATE EstadoProducto SET Estado = 'EN REVISION' WHERE EstadoProductoID = 2;
 ALTER TABLE Cotizaciones ADD Terminos NVARCHAR(MAX);
 
 SELECT * FROM Cotizaciones
+
+ALTER TABLE Usuarios ADD ResetToken NVARCHAR(255) NULL;
+ALTER TABLE Usuarios ADD ResetTokenExpiry DATETIME NULL;

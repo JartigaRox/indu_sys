@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // <--- IMPORTAR LINK
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
 import { User, Lock } from 'lucide-react';
 
@@ -75,6 +75,13 @@ function Login() {
             <Button type="submit" className="btn-institutional w-100 py-2">
               INICIAR SESIÓN
             </Button>
+
+            {/* ENLACE NUEVO */}
+            <div className="text-end mt-3">
+              <Link to="/forgot-password" style={{ fontSize: '0.85rem', textDecoration: 'none', color: '#6c757d' }}>
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
 
           </Form>
 

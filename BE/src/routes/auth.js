@@ -12,7 +12,9 @@ import {
   deleteUser,
   getRoles,
   getUserSignature,
-  getSellers
+  getSellers,
+  forgotPassword, // <--- NUEVO
+  resetPassword   // <--- NUEVO
 } from '../controllers/auth.js';
 import { verifyToken, isSudo } from '../middlewares/auth.js';
 
@@ -21,6 +23,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Rutas Públicas
 router.post('/login', login);
+router.post('/forgot-password', forgotPassword); // <--- NUEVA RUTA
+router.post('/reset-password/:token', resetPassword); // <--- NUEVA RUTA
 
 // Ruta para refrescar token (puede recibir token expirado)
 router.post('/refresh-token', refreshToken);

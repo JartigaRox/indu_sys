@@ -12,6 +12,10 @@ import Products from './pages/Products';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
 
+// IMPORTAR NUEVAS PÁGINAS
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+
 // Protección de Rutas
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -25,8 +29,10 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Ruta Pública */}
+          {/* Rutas Públicas */}
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           
           {/* Rutas Privadas (Dentro del Layout) */}
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>

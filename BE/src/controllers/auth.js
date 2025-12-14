@@ -1,8 +1,31 @@
 import { getConnection, sql } from '../../db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
-// --- NUEVA FUNCIÓN: Obtener lista para el combobox ---
+// ---------------------------------------------------
+// CONFIGURACIÓN DE CORREO (NODEMAILER)
+// ---------------------------------------------------
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST, 
+    port: process.env.SMTP_PORT, 
+    secure: process.env.SMTP_SECURE === 'true', // Convierte string a boolean
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false // Ayuda en desarrollo si hay problemas de certificados
+    },
+
+});
+
+// ---------------------------------------------------
+// FUNCIONES DE AUTENTICACIÓN Y USUARIOS
+// ---------------------------------------------------
+
+// Obtener tipos de vendedor (para el combo de registro)
 export const getSellerTypes = async (req, res) => {
   try {
     const pool = await getConnection();
@@ -13,7 +36,7 @@ export const getSellerTypes = async (req, res) => {
   }
 };
 
-// --- FUNCIÓN EDITADA ---
+// Registrar nuevo usuario
 export const register = async (req, res) => {
   const { username, password, rolId, email, tipoVendedorId } = req.body;
   const firmaFile = req.file; // Imagen de firma/sello desde multer
@@ -54,8 +77,8 @@ export const register = async (req, res) => {
   }
 };
 
+// Iniciar sesión
 export const login = async (req, res) => {
-  // ... (Tu función login se queda EXACTAMENTE IGUAL, no la toques) ...
   const { username, password } = req.body;
   try {
     const pool = await getConnection();
@@ -80,7 +103,7 @@ export const login = async (req, res) => {
   }
 };
 
-// Nuevo endpoint para refrescar el token
+// Refrescar token
 export const refreshToken = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
@@ -131,8 +154,6 @@ export const refreshToken = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-// --- GESTIÓN DE USUARIOS ---
 
 // Obtener todos los usuarios
 export const getUsers = async (req, res) => {
@@ -280,46 +301,41 @@ export const getRoles = async (req, res) => {
 };
 
 // Obtener firma/sello de un usuario
-// Obtener firma/sello de un usuario
 export const getUserSignature = async (req, res) => {
   const { id } = req.params;
 
-  // --- VALIDACIÓN DE ID BLINDADA ---
-  // Si el ID no existe, es 'undefined', 'null' o no es un número válido:
   if (!id || isNaN(parseInt(id))) {
-    // Respondemos 404 silenciosamente para que no explote la consola
     return res.status(404).send("ID de usuario inválido o no proporcionado");
   }
 
   try {
     const pool = await getConnection();
     const result = await pool.request()
-      .input("id", sql.Int, parseInt(id)) // Aseguramos que sea entero
+      .input("id", sql.Int, parseInt(id)) 
       .query("SELECT FirmaSello FROM Usuarios WHERE UsuarioID = @id");
     
     if (result.recordset.length === 0 || !result.recordset[0].FirmaSello) {
-      return res.status(404).send("Firma no encontrada"); // Cambiado a .send para imagen
+      return res.status(404).send("Firma no encontrada"); 
     }
     
     const imageBuffer = result.recordset[0].FirmaSello;
     
-    // Detectar tipo de imagen
     let contentType = 'image/png';
     if (imageBuffer[0] === 0xFF && imageBuffer[1] === 0xD8) {
       contentType = 'image/jpeg';
     }
     
     res.set('Content-Type', contentType);
-    res.set('Cache-Control', 'public, max-age=3600'); // Cachear imagen 1 hora
+    res.set('Cache-Control', 'public, max-age=3600'); 
     res.send(imageBuffer);
 
   } catch (error) {
-    // Solo logueamos errores reales de base de datos, no de validación
     console.error('Error DB en getUserSignature:', error.message);
     res.status(500).send("Error al obtener firma");
   }
 };
-// Obtener lista de usuarios vendedores (para combobox en cotizaciones)
+
+// Obtener lista de usuarios vendedores
 export const getSellers = async (req, res) => {
   try {
     const pool = await getConnection();
@@ -338,4 +354,121 @@ export const getSellers = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// ---------------------------------------------------
+// RECUPERACIÓN DE CONTRASEÑA
+// ---------------------------------------------------
+
+// 1. Solicitar recuperación (Busca por Username, envía a su Email)
+export const forgotPassword = async (req, res) => {
+    const { username } = req.body; 
+
+    if (!username) return res.status(400).json({ message: "El nombre de usuario es requerido" });
+
+    try {
+        const pool = await getConnection();
+        
+        // 1. Verificar usuario y obtener correo
+        const userResult = await pool.request()
+            .input("username", sql.NVarChar, username)
+            .query("SELECT UsuarioID, Username, CorreoElectronico FROM Usuarios WHERE Username = @username");
+
+        const user = userResult.recordset[0];
+
+        // Validaciones
+        if (!user) {
+            // Error 404 si el usuario no existe en la BD
+            return res.status(404).json({ message: "Usuario no encontrado." });
+        }
+
+        if (!user.CorreoElectronico) {
+            // Error si el usuario existe pero no tiene correo guardado
+            return res.status(400).json({ message: "Este usuario no tiene un correo electrónico configurado. Contacte al administrador." });
+        }
+
+        // 2. Generar Token y Expiración (1 hora)
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 3600000); 
+
+        // 3. Guardar en BD
+        await pool.request()
+            .input("token", sql.NVarChar, token)
+            .input("expiry", sql.DateTime, expiry)
+            .input("id", sql.Int, user.UsuarioID)
+            .query("UPDATE Usuarios SET ResetToken = @token, ResetTokenExpiry = @expiry WHERE UsuarioID = @id");
+
+        // 4. Enviar Correo
+        const resetLink = `http://localhost:5173/reset-password/${token}`; // URL del Frontend
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: user.CorreoElectronico,
+            subject: 'Recuperación de Contraseña - Sistema GP',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2 style="color: #003366;">Hola ${user.Username},</h2>
+                    <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+                    <p>Haz clic en el siguiente botón para crear una nueva:</p>
+                    <br>
+                    <a href="${resetLink}" style="padding: 10px 20px; background-color: #D4AF37; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Restablecer Contraseña</a>
+                    <br><br>
+                    <p style="font-size: 12px; color: #666;">Este enlace expira en 1 hora.</p>
+                    <p style="font-size: 12px; color: #666;">Si no fuiste tú, ignora este mensaje.</p>
+                </div>
+            `
+        };
+
+        // Enviar con manejo de errores específico
+        try {
+            const info = await transporter.sendMail(mailOptions);
+            console.log("✅ Correo enviado correctamente: ", info.messageId);
+            res.json({ message: `Se ha enviado un enlace al correo registrado para el usuario ${username}.` });
+        } catch (mailError) {
+            console.error("❌ Error enviando correo:", mailError);
+            return res.status(500).json({ message: "Error técnico al enviar el correo. Revisa la consola del servidor." });
+        }
+
+    } catch (error) {
+        console.error("Error general en forgotPassword:", error);
+        res.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
+// 2. Restablecer contraseña (Recibe token y nueva clave)
+export const resetPassword = async (req, res) => {
+    const { token } = req.params;
+    const { newPassword } = req.body;
+
+    if (!token || !newPassword) return res.status(400).json({ message: "Datos incompletos" });
+
+    try {
+        const pool = await getConnection();
+
+        // 1. Validar token
+        const userResult = await pool.request()
+            .input("token", sql.NVarChar, token)
+            .query("SELECT UsuarioID FROM Usuarios WHERE ResetToken = @token AND ResetTokenExpiry > GETDATE()");
+
+        if (userResult.recordset.length === 0) {
+            return res.status(400).json({ message: "El enlace es inválido o ha expirado." });
+        }
+
+        const userId = userResult.recordset[0].UsuarioID;
+
+        // 2. Encriptar y actualizar
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        await pool.request()
+            .input("pass", sql.NVarChar, hashedPassword)
+            .input("id", sql.Int, userId)
+            .query("UPDATE Usuarios SET PasswordHash = @pass, ResetToken = NULL, ResetTokenExpiry = NULL WHERE UsuarioID = @id");
+
+        res.json({ message: "Contraseña actualizada correctamente. Ahora puedes iniciar sesión." });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al restablecer la contraseña" });
+    }
 };
