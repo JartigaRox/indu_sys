@@ -76,6 +76,10 @@ const CreateQuotation = () => {
   // Efecto para cargar el texto por defecto de los términos cuando cambia la empresa
   useEffect(() => {
     if (selectedCompanyId && companies.length > 0) {
+      // Solo establecemos el default si estamos creando nuevo, o si es edición pero no hay términos guardados aún
+      // Sin embargo, para simplificar, si el usuario ya escribió algo (terms !== ""), no lo sobrescribimos automáticamente
+      // a menos que sea la carga inicial o cambio explícito de empresa en modo creación.
+      
       const comp = companies.find(c => c.EmpresaID === parseInt(selectedCompanyId));
       
       if (comp) {
@@ -90,10 +94,13 @@ TELÉFONO: ${comp.Telefono || ''}
 NIT: ${comp.NIT || ''}
 Registro: ${comp.NRC || ''}`;
         
-        setTerms(defaultTerms);
+        // Si el campo está vacío, ponemos el default
+        if(terms === "") {
+             setTerms(defaultTerms);
+        }
       }
     }
-  }, [selectedCompanyId, companies]);
+  }, [selectedCompanyId, companies]); // NOTA: Quitamos 'terms' de dependencias para evitar loops
 
   useEffect(() => {
     const loadData = async () => {
@@ -138,6 +145,12 @@ Registro: ${comp.NRC || ''}`;
                     productoId: i.ProductoID, codigo: i.CodigoProducto, nombre: i.NombreProducto,
                     descripcion: i.Descripcion || '', imagenURL: i.ImagenURL, cantidad: i.Cantidad, precio: i.PrecioUnitario
                 })));
+
+                // MODIFICADO: Cargar términos guardados si existen
+                if (q.Terminos) {
+                    setTerms(q.Terminos);
+                }
+
             } catch (error) { Swal.fire('Error', 'Error cargando cotización', 'error'); }
         }
       } catch (error) { console.error(error); } finally { setLoading(false); }
@@ -185,15 +198,22 @@ Registro: ${comp.NRC || ''}`;
 
   const handleSave = async () => {
     if (!selectedClient || items.length === 0) return Swal.fire('Faltan datos', 'Seleccione cliente y productos', 'warning');
+    
+    // MODIFICADO: Se agrega 'terminos' al payload
     const payload = {
       clienteId: selectedClient.value, empresaId: parseInt(selectedCompanyId), nombreQuienCotiza: user.username,
       telefonoSnapshot: clientData?.Telefono, atencionASnapshot: clientData?.AtencionA, direccionSnapshot: clientData?.DireccionCalle,
-      items, vendedorId: selectedSeller?.value || null
+      items, vendedorId: selectedSeller?.value || null,
+      terminos: terms 
     };
 
     try {
-      await api.post('/quotations', payload);
-      Swal.fire('Éxito', isEditMode ? 'Nueva versión guardada' : 'Cotización creada', 'success');
+      if (isEditMode) {
+          await api.put(`/quotations/${id}`, payload);
+      } else {
+          await api.post('/quotations', payload);
+      }
+      Swal.fire('Éxito', isEditMode ? 'Cotización actualizada' : 'Cotización creada', 'success');
       navigate('/cotizaciones');
     } catch (error) { Swal.fire('Error', 'No se pudo guardar', 'error'); }
   };
@@ -204,7 +224,7 @@ Registro: ${comp.NRC || ''}`;
     <div>
       <div className="d-flex align-items-center mb-4 no-print">
         <Button variant="link" onClick={() => navigate('/cotizaciones')} className="text-secondary p-0 me-3"><ArrowLeft size={24} /></Button>
-        <h2 className="text-inst-blue fw-bold mb-0">{isEditMode ? 'Nueva versión de Cotización' : 'Nueva Cotización'}</h2>
+        <h2 className="text-inst-blue fw-bold mb-0">{isEditMode ? 'Editar Cotización' : 'Nueva Cotización'}</h2>
       </div>
       <Row>
         <Col lg={5} className="no-print">
@@ -251,7 +271,7 @@ Registro: ${comp.NRC || ''}`;
             </Card.Body>
           </Card>
 
-          {/* 4. EDITOR DE TÉRMINOS (MOVIDO AL FINAL) */}
+          {/* 4. EDITOR DE TÉRMINOS */}
           <Card className="shadow-sm border-0 mb-4">
             <Card.Body>
                 <Form.Label className="fw-bold">Términos y Condiciones (Para impresión)</Form.Label>

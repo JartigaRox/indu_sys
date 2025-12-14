@@ -26,9 +26,8 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
         .then(res => {
             const data = res.data;
             
-            // --- GENERAR TEXTO DE TÉRMINOS (Igual que en CreateQuotation) ---
-            // Como no guardamos el texto editado en la BD, regeneramos el default con los datos de la empresa
-            const termsContent = `NOTA: EN CASO DE DETECTARSE ERRORES ARITMÉTICOS EN LOS CÁLCULOS, LA COTIZACIÓN SERÁ CORREGIDA Y ACTUALIZADA DE INMEDIATO, NOTIFICANDO AL CLIENTE. LOS VALORES CORRECTOS PREVALECERÁN SOBRE CUALQUIER ERROR TIPOGRÁFICO O DE CÁLCULO. LA ACEPTACIÓN DE ESTA COTIZACIÓN IMPLICA EL RECONOCIMIENTO DE ESTA CONDICIÓN. LAS IMÁGENES SON DE FIN ILUSTRATIVO, SUJETAS A CAMBIOS.
+            // --- GENERAR TEXTO POR DEFECTO ---
+            const defaultTerms = `NOTA: EN CASO DE DETECTARSE ERRORES ARITMÉTICOS EN LOS CÁLCULOS, LA COTIZACIÓN SERÁ CORREGIDA Y ACTUALIZADA DE INMEDIATO, NOTIFICANDO AL CLIENTE. LOS VALORES CORRECTOS PREVALECERÁN SOBRE CUALQUIER ERROR TIPOGRÁFICO O DE CÁLCULO. LA ACEPTACIÓN DE ESTA COTIZACIÓN IMPLICA EL RECONOCIMIENTO DE ESTA CONDICIÓN. LAS IMÁGENES SON DE FIN ILUSTRATIVO, SUJETAS A CAMBIOS.
 GARANTÍA: 1 AÑO POR DESPERFECTO DE FABRICACIÓN VALIDEZ DE LA OFERTA: 7 DÍAS CALENDARIO PRECIO INCLUYE IVA Y TRANSPORTE
 CONDICIÓN DE PAGO: CHEQUE O AL CONTADO
 CHEQUE A NOMBRE DE: JEREMÍAS DE JESÚS ARTIGA DE PAZ
@@ -38,6 +37,9 @@ DIRECCIÓN: CARRETERA A SONSONATE, KM. 24, EDIFICIO GP DON BOSCO, DISTRITO DE CO
 TELÉFONO: ${data.TelefonoEmpresa || ''}
 NIT: ${data.NIT || ''}
 Registro: ${data.NRC || ''}`;
+
+            // MODIFICADO: Usar los términos guardados si existen, sino usar default
+            const termsContent = data.Terminos ? data.Terminos : defaultTerms;
 
             const formattedData = {
                 cliente: {
@@ -75,7 +77,7 @@ Registro: ${data.NRC || ''}`;
                     CorreoElectronico: data.EmailEmpresa,
                     PaginaWeb: data.WebEmpresa
                 },
-                terminos: termsContent // <--- IMPORTANTE: Pasamos el texto generado aquí
+                terminos: termsContent // <--- Aquí pasamos el contenido correcto
             };
             setQuoteData(formattedData);
             setLoading(false);
