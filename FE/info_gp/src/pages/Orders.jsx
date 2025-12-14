@@ -30,6 +30,15 @@ const Orders = () => {
   // Estado para calendario
   const [showCalendar, setShowCalendar] = useState(false);
 
+  // --- NUEVO: Función para formatear moneda con separadores de miles ---
+  const formatMoney = (amount) => {
+    const num = parseFloat(amount) || 0;
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
   // Función para calcular días restantes
   const calcularDiasRestantes = (fechaEntrega) => {
     if (!fechaEntrega) return null;
@@ -82,17 +91,29 @@ const Orders = () => {
       filtered = filtered.filter(o => o.EstadoNombre === filterStatus);
     }
 
-    // Ordenar: "Pagado y finalizado" al final de la lista
+    // --- LÓGICA DE ORDENAMIENTO MEJORADA ---
     filtered.sort((a, b) => {
       const aEsFinalizado = a.EstadoNombre === 'Pagado y finalizado';
       const bEsFinalizado = b.EstadoNombre === 'Pagado y finalizado';
       
-      // Si a es finalizado y b no, a va después (return 1)
+      // 1. Primero separamos los finalizados (se van al fondo)
       if (aEsFinalizado && !bEsFinalizado) return 1;
-      // Si b es finalizado y a no, b va después (return -1)
       if (!aEsFinalizado && bEsFinalizado) return -1;
       
-      // Si ambos tienen la misma condición, ordenar por fecha de creación (más reciente primero)
+      // 2. Si ambos son activos (no finalizados), ordenar por Fecha de Entrega (Ascendente)
+      // "Menos días restantes" significa fecha más antigua o próxima.
+      if (!aEsFinalizado && !bEsFinalizado) {
+        // Manejar casos donde no hay fecha de entrega (ponerlos al final de los activos)
+        if (!a.FechaEntrega && b.FechaEntrega) return 1;
+        if (a.FechaEntrega && !b.FechaEntrega) return -1;
+        if (a.FechaEntrega && b.FechaEntrega) {
+            return new Date(a.FechaEntrega) - new Date(b.FechaEntrega);
+        }
+        // Si ninguno tiene fecha, ordenar por creación
+        return new Date(b.FechaCreacion) - new Date(a.FechaCreacion);
+      }
+      
+      // 3. Si ambos son finalizados, ordenar por fecha de creación (más reciente primero) para mantener historial ordenado
       return new Date(b.FechaCreacion) - new Date(a.FechaCreacion);
     });
 
@@ -291,10 +312,10 @@ const Orders = () => {
                       </td>
                       <td className="small" style={{ backgroundColor: bgColor }}>
                           <div className="fw-bold" style={{ color: textColor === '#fff' ? '#90EE90' : '#198754' }}>
-                            Pagado: ${order.TotalPagado?.toFixed(2)}
+                            Pagado: ${formatMoney(order.TotalPagado)}
                           </div>
                           <div style={{ color: textColor === '#fff' ? '#FFB6C1' : '#dc3545' }}>
-                            Pendiente: ${order.PagoPendiente?.toFixed(2)}
+                            Pendiente: ${formatMoney(order.PagoPendiente)}
                           </div>
                           <div className="mt-1">
                             <span className="fw-semibold">Forma de pago anticipo: </span>

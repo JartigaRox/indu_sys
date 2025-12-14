@@ -32,6 +32,10 @@ const CreateQuotation = () => {
   const [quantity, setQuantity] = useState(1);
   const [price, setPrice] = useState(0);
   const [customDescription, setCustomDescription] = useState(""); 
+  
+  // Estado para los términos y condiciones editables
+  const [terms, setTerms] = useState(""); 
+
   const [items, setItems] = useState([]);
   const [editingIndex, setEditingIndex] = useState(-1);
   const [loading, setLoading] = useState(true);
@@ -56,9 +60,40 @@ const CreateQuotation = () => {
   const displayId = nextId ? nextId.toString().padStart(6, '0') : '000000';
   const quoteNumber = `${initials}-${displayId}`; 
 
-  const pdfData = { cliente: clientData, items, user, numeroCotizacion: quoteNumber, fecha: new Date(), empresa: companyData, vendedor: selectedSeller?.data || null };
+  const pdfData = { 
+    cliente: clientData, 
+    items, 
+    user, 
+    numeroCotizacion: quoteNumber, 
+    fecha: new Date(), 
+    empresa: companyData, 
+    vendedor: selectedSeller?.data || null,
+    terminos: terms 
+  };
 
   const handlePrint = useReactToPrint({ contentRef: printRef, documentTitle: `Cotizacion-${quoteNumber}` });
+
+  // Efecto para cargar el texto por defecto de los términos cuando cambia la empresa
+  useEffect(() => {
+    if (selectedCompanyId && companies.length > 0) {
+      const comp = companies.find(c => c.EmpresaID === parseInt(selectedCompanyId));
+      
+      if (comp) {
+        const defaultTerms = `NOTA: EN CASO DE DETECTARSE ERRORES ARITMÉTICOS EN LOS CÁLCULOS, LA COTIZACIÓN SERÁ CORREGIDA Y ACTUALIZADA DE INMEDIATO, NOTIFICANDO AL CLIENTE. LOS VALORES CORRECTOS PREVALECERÁN SOBRE CUALQUIER ERROR TIPOGRÁFICO O DE CÁLCULO. LA ACEPTACIÓN DE ESTA COTIZACIÓN IMPLICA EL RECONOCIMIENTO DE ESTA CONDICIÓN. LAS IMÁGENES SON DE FIN ILUSTRATIVO, SUJETAS A CAMBIOS.
+GARANTÍA: 1 AÑO POR DESPERFECTO DE FABRICACIÓN VALIDEZ DE LA OFERTA: 7 DÍAS CALENDARIO PRECIO INCLUYE IVA Y TRANSPORTE
+CONDICIÓN DE PAGO: CHEQUE O AL CONTADO
+CHEQUE A NOMBRE DE: JEREMÍAS DE JESÚS ARTIGA DE PAZ
+RAZÓN SOCIAL: JEREMÍAS DE JESÚS ARTIGA DE PAZ
+CONTACTO DE LA EMPRESA:
+DIRECCIÓN: CARRETERA A SONSONATE, KM. 24, EDIFICIO GP DON BOSCO, DISTRITO DE COLON, MUNICIPIO DE LA LIBERTAD OESTE
+TELÉFONO: ${comp.Telefono || ''}
+NIT: ${comp.NIT || ''}
+Registro: ${comp.NRC || ''}`;
+        
+        setTerms(defaultTerms);
+      }
+    }
+  }, [selectedCompanyId, companies]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -137,7 +172,6 @@ const CreateQuotation = () => {
     }
 
     setCurrentProduct(prodOption); setQuantity(item.cantidad); setPrice(item.precio);
-    // IMPORTANTE: Aseguramos cargar solo la descripción del item
     setCustomDescription(item.descripcion ? String(item.descripcion) : ""); 
     setEditingIndex(index);
   };
@@ -174,6 +208,7 @@ const CreateQuotation = () => {
       </div>
       <Row>
         <Col lg={5} className="no-print">
+          {/* 1. SELECCIÓN DE CLIENTE Y EMPRESA */}
           <Card className="shadow-sm border-0 mb-4">
             <Card.Body>
               <Form.Group className="mb-3">
@@ -188,6 +223,8 @@ const CreateQuotation = () => {
               <Form.Group className="mb-3"><Form.Label>VENDEDOR</Form.Label><Select options={sellers.map(s => ({ value: s.UsuarioID, label: s.Username, data: s }))} value={selectedSeller} onChange={setSelectedSeller}/></Form.Group>
             </Card.Body>
           </Card>
+          
+          {/* 2. AGREGAR PRODUCTO */}
           <Card className="shadow-sm border-0 mb-4">
             <Card.Body>
               <Row className="g-2">
@@ -201,14 +238,36 @@ const CreateQuotation = () => {
               </Row>
             </Card.Body>
           </Card>
-          <Card className="shadow-sm border-0"><Card.Body>
+
+          {/* 3. LISTA DE PRODUCTOS */}
+          <Card className="shadow-sm border-0 mb-4">
+            <Card.Body>
                 {items.map((item, idx) => (
                     <div key={idx} className="d-flex justify-content-between border-bottom pb-2 mb-2">
                         <div className="small w-75"><div className="fw-bold">{item.nombre}</div><div className="text-muted">{String(item.descripcion).substring(0,50)}...</div></div>
                         <div><Button variant="link" onClick={() => handleEditItem(idx)}><Edit2 size={16}/></Button><Button variant="link" className="text-danger" onClick={() => setItems(items.filter((_, i) => i !== idx))}><Trash2 size={16}/></Button></div>
                     </div>
                 ))}
-          </Card.Body></Card>
+            </Card.Body>
+          </Card>
+
+          {/* 4. EDITOR DE TÉRMINOS (MOVIDO AL FINAL) */}
+          <Card className="shadow-sm border-0 mb-4">
+            <Card.Body>
+                <Form.Label className="fw-bold">Términos y Condiciones (Para impresión)</Form.Label>
+                <Form.Control 
+                    as="textarea" 
+                    rows={8} 
+                    value={terms} 
+                    onChange={(e) => setTerms(e.target.value)}
+                    style={{ fontSize: '11px', lineHeight: '1.2' }}
+                />
+                <Form.Text className="text-muted">
+                    Puede editar el texto que aparecerá al final del PDF.
+                </Form.Text>
+            </Card.Body>
+          </Card>
+
         </Col>
         <Col lg={7}>
           <Card className="shadow h-100">

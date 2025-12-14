@@ -4,7 +4,7 @@ import { FaMapMarkerAlt, FaPhoneAlt, FaWhatsapp, FaEnvelope, FaGlobe } from 'rea
 const QuotationPDF = forwardRef(({ data }, ref) => {
   if (!data || !data.empresa) return null;
 
-  const { cliente, items, user, numeroCotizacion, fecha, empresa } = data;
+  const { cliente, items, user, numeroCotizacion, fecha, empresa, terminos } = data; // Agregado 'terminos' aquí
 
   // Calcular total
   const total = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
@@ -23,19 +23,39 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
     });
   };
 
+  // --- FUNCIÓN HELPER PARA RENDERIZAR LÍNEAS DE TÉRMINOS ---
+  // Convierte texto plano en items de lista y pone en negrita las claves (ej: "NOTA:")
+  const renderTermsList = (termsText) => {
+    if (!termsText) return null;
+    
+    return termsText.split('\n').map((line, idx) => {
+        if (!line.trim()) return null;
+        
+        // Detectar si la línea tiene una "clave" al principio (ej: "NOTA:", "GARANTÍA:")
+        const parts = line.split(':');
+        const hasLabel = parts.length > 1 && parts[0].length < 30; // Heurística simple
+
+        if (hasLabel) {
+            const label = parts[0];
+            const content = parts.slice(1).join(':');
+            return (
+                <li key={idx} className="mb-1">
+                    <strong>{label}:</strong>{content}
+                </li>
+            );
+        }
+        
+        return <li key={idx}>{line}</li>;
+    });
+  };
+
   // --- ESTILOS DE ENCABEZADO ---
   const HeaderStyleA = () => (
     <div className="d-flex justify-content-between align-items-start pb-2 mb-3" style={{ borderBottom: '2px solid #009FE3' }}>
       <div className="d-flex flex-column">
         <div className="d-flex align-items-center mb-2">
           <div>
-            {/* Logo Empresa 1 */}
-            <img
-              src="/src/assets/IndusL.png"
-              alt="Logo Info GP"
-              style={{ width: '200px', height: 'auto', objectFit: 'contain' }}
-              onError={(e) => e.target.style.display = 'none'}
-            />
+            <img src="/src/assets/IndusL.png" alt="Logo Info GP" style={{ width: '200px', height: 'auto', objectFit: 'contain' }} onError={(e) => e.target.style.display = 'none'} />
           </div>
         </div>
         <h1 style={{ fontFamily: 'Times New Roman, serif', fontSize: '18px', color: '#222', margin: '0', textAlign: 'justify' }}>{empresa.Nombre}</h1>
@@ -53,13 +73,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
       <div className="d-flex flex-column">
         <div className="d-flex align-items-center mb-2">
           <div>
-            {/* Logo Empresa 2 */}
-            <img
-              src="/src/assets/PoligL.png"
-              alt="Logo Info GP"
-              style={{ width: '200px', height: 'auto', objectFit: 'contain' }}
-              onError={(e) => e.target.style.display = 'none'}
-            />
+            <img src="/src/assets/PoligL.png" alt="Logo Info GP" style={{ width: '200px', height: 'auto', objectFit: 'contain' }} onError={(e) => e.target.style.display = 'none'} />
           </div>
         </div>
         <h1 style={{ fontFamily: 'Times New Roman, serif', fontSize: '18px', color: '#222', margin: '0', textAlign: 'justify' }}>{empresa.Nombre}</h1>
@@ -107,7 +121,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
       style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', color: 'black', textTransform: 'uppercase' }}
     >
       <table className="print-table w-100">
-        {/* 1. HEADER (Espacio reservado) */}
+        {/* 1. HEADER */}
         <thead>
           <tr>
             <td>
@@ -138,98 +152,50 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                       {cliente?.Municipio && `, ${cliente.Municipio}`}
                       {cliente?.Departamento && `, ${cliente.Departamento}`}
                     </p>
-                    <p></p>
                     <p className="mb-0 text small">PRESENTE</p>
-                    <p></p>
                     <p className="mb-0 text small">NOS COMPLACE ENNVIARLE LA SIGUIENTE COTIZACIÓN PARA LOS SUMINISTROS DE:</p>
                   </div>
                 </div>
 
                 {/* Tabla de Items */}
                 {items.map((item, i) => {
-                  // --- LÓGICA ANTI-DUPLICADOS ---
                   const rawDesc = item.descripcion ? String(item.descripcion) : "";
-                  const descLines = [
-                    ...new Set(
-                      rawDesc.split('\n')
-                        .map(line => line.trim())
-                        .filter(line => line !== '')
-                    )
-                  ];
-                  // ------------------------------
+                  const descLines = [...new Set(rawDesc.split('\n').map(line => line.trim()).filter(line => line !== ''))];
 
                   return (
                     <table key={i} className="w-100 mb-4" style={{ border: '2px solid black', borderCollapse: 'collapse', pageBreakInside: 'avoid' }}>
                       <tbody>
-                        {/* Fila 1: Headers */}
+                        {/* Headers */}
                         <tr>
-                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '8%', padding: '8px', fontSize: '11px' }}>
-                            CAN
-                          </td>
-                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '15%', padding: '8px', fontSize: '11px' }}>
-                            CÓDIGO
-                          </td>
-                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '37%', padding: '8px', fontSize: '11px' }}>
-                            NOMBRE ÍTEM
-                          </td>
+                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '8%', padding: '8px', fontSize: '11px' }}>CAN</td>
+                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '15%', padding: '8px', fontSize: '11px' }}>CÓDIGO</td>
+                          <td className="fw-bold text-center align-middle" style={{ border: '1px solid black', width: '37%', padding: '8px', fontSize: '11px' }}>NOMBRE ÍTEM</td>
                           <td rowSpan="3" className="text-center align-middle" style={{ border: '1px solid black', width: '40%', padding: '8px' }}>
                             {item.imagenURL ? (
-                              <img
-                                src={item.imagenURL}
-                                alt={item.nombre}
-                                style={{
-                                  width: '100%',
-                                  maxWidth: '180px',
-                                  height: 'auto',
-                                  maxHeight: '180px',
-                                  objectFit: 'contain'
-                                }}
-                                onError={(e) => e.target.style.display = 'none'}
-                              />
-                            ) : (
-                              <div className="text-muted" style={{ fontSize: '11px' }}>N/A</div>
-                            )}
+                              <img src={item.imagenURL} alt={item.nombre} style={{ width: '100%', maxWidth: '180px', height: 'auto', maxHeight: '180px', objectFit: 'contain' }} onError={(e) => e.target.style.display = 'none'} />
+                            ) : (<div className="text-muted" style={{ fontSize: '11px' }}>N/A</div>)}
                           </td>
                         </tr>
-
-                        {/* Fila 2: Valores */}
+                        {/* Valores */}
                         <tr>
-                          <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
-                            {item.cantidad}
-                          </td>
-                          <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
-                            {item.codigo || 'N/A'}
-                          </td>
-                          <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
-                            {item.nombre || 'N/A'}
-                          </td>
+                          <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>{item.cantidad}</td>
+                          <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>{item.codigo || 'N/A'}</td>
+                          <td className="text-center align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>{item.nombre || 'N/A'}</td>
                         </tr>
-
-                        {/* Fila 3: Descripción (Limpia) */}
+                        {/* Descripción */}
                         <tr>
                           <td colSpan="3" className="align-top" style={{ border: '1px solid black', padding: '12px' }}>
                             {descLines.length > 0 ? (
                               <ul className="mb-0 ps-3" style={{ fontSize: '10px', lineHeight: '1.4' }}>
-                                {descLines.map((line, idx) => (
-                                  <li key={idx}>{line.toUpperCase()}</li>
-                                ))}
+                                {descLines.map((line, idx) => (<li key={idx}>{line.toUpperCase()}</li>))}
                               </ul>
-                            ) : (
-                              <ul className="mb-0 ps-3" style={{ fontSize: '10px' }}>
-                                <li>SIN DESCRIPCIÓN</li>
-                              </ul>
-                            )}
+                            ) : (<ul className="mb-0 ps-3" style={{ fontSize: '10px' }}><li>SIN DESCRIPCIÓN</li></ul>)}
                           </td>
                         </tr>
-
-                        {/* Fila 4: Totales */}
+                        {/* Totales */}
                         <tr>
-                          <td colSpan="2" className="fw-bold text-start ps-3 align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>
-                            PRECIO UNITARIO
-                          </td>
-                          <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
-                            ${formatNumber(item.precio)}
-                          </td>
+                          <td colSpan="2" className="fw-bold text-start ps-3 align-middle" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>PRECIO UNITARIO</td>
+                          <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>${formatNumber(item.precio)}</td>
                           <td className="align-middle" style={{ border: '1px solid black', padding: '8px' }}>
                             <div className="d-flex justify-content-between align-items-center px-2">
                               <span className="fw-bold" style={{ fontSize: '11px' }}>PRECIO TOTAL</span>
@@ -242,7 +208,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                   );
                 })}
 
-                {/* Footer del Contenido: Total General */}
+                {/* Footer Total */}
                 <div className="mt-4">
                   <div className="d-flex justify-content-end mb-5">
                     <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: mainColor, minWidth: '250px', display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
@@ -254,73 +220,28 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
 
                 {/* Términos, Firmas y Sellos */}
                 <div className="avoid-break">
-                  
-                  {/* === CORRECCIÓN DE ESPACIADO === */}
-                  {/* Se elimina 'border rounded bg-white' y 'p-X' para usar estilos inline puros */}
-                  <div 
-                    className="text-secondary" 
-                    style={{ 
-                      fontSize: '10px', 
-                      border: '1px solid #cccccc',  // Borde gris explícito
-                      borderRadius: '5px',          // Bordes redondeados explícitos
-                      backgroundColor: '#ffffff',   // Fondo blanco explícito
-                      padding: '15px'               // Padding explícito GRANDE (35px)
-                    }}
-                  >
-                    <div className="row m-0"> {/* m-0 para que el row no se coma el padding */}
-                      
+                  <div className="text-secondary" style={{ fontSize: '10px', border: '1px solid #cccccc', borderRadius: '5px', backgroundColor: '#ffffff', padding: '35px' }}>
+                    <div className="row m-0">
                       {/* Términos y Condiciones */}
                       <div className="col-8">
                         <h6 className="fw-bold mb-2 text-dark">TÉRMINOS Y CONDICIONES:</h6>
                         <ul className="ps-3 mb-0" style={{ listStyleType: 'circle' }}>
-                          <li className="mb-1"><strong>NOTA:</strong> EN CASO DE DETECTARSE ERRORES ARITMÉTICOS EN LOS CÁLCULOS, LA COTIZACIÓN SERÁ CORREGIDA Y ACTUALIZADA DE INMEDIATO, NOTIFICANDO AL CLIENTE. LOS VALORES CORRECTOS PREVALECERÁN SOBRE CUALQUIER ERROR TIPOGRÁFICO O DE CÁLCULO. LA ACEPTACIÓN DE ESTA COTIZACIÓN IMPLICA EL RECONOCIMIENTO DE ESTA CONDICIÓN. LAS IMÁGENES SON DE FIN ILUSTRATIVO, SUJETAS A CAMBIOS.</li>
-                          <li className="mb-1"><strong>GARANTÍA:</strong> 1 AÑO POR DESPERFECTO DE FABRICACIÓN VALIDEZ DE LA OFERTA: <strong>7 DÍAS CALENDARIO</strong> PRECIO INCLUYE IVA Y TRANSPORTE</li>
-                          <li className="mb-1"><strong>CONDICIÓN DE PAGO: CHEQUE O AL CONTADO</strong></li>
-                          <li>CHEQUE A NOMBRE DE: JEREMÍAS DE JESÚS ARTIGA DE PAZ</li>
-                          <li>RAZÓN SOCIAL: JEREMÍAS DE JESÚS ARTIGA DE PAZ</li>
-                          <li className="mb-1"><strong>CONTACTO DE LA EMPRESA:</strong></li>
-                          <li>DIRECCIÓN: CARRETERA A SONSONATE, KM. 24, EDIFICIO GP DON BOSCO, DISTRITO DE COLON, MUNICIPIO DE LA LIBERTAD OESTE</li>
-                          <li>TELÉFONO:{empresa.Telefono} </li>
-                          <li>NIT: {empresa.NIT}</li>
-                          <li>Registro: {empresa.NRC}</li>
+                          {/* AQUI RENDERIZAMOS LOS TERMINOS DINAMICOS */}
+                          {renderTermsList(terminos)}
                         </ul>
                       </div>
 
-                      {/* ÁREA DE FIRMAS Y SELLOS SUPERPUESTOS */}
-                      {/* === CORRECCIÓN DE POSICIÓN FIRMA === */}
-                      {/* Se aumentó marginTop a 60px para bajar más la sección */}
+                      {/* Firmas y Sellos */}
                       <div className="col-4 text-center" style={{ height: '230px', position: 'relative', marginTop: '60px' }}>
-
-                        {/* --- CAPA 1: SELLO (Posicionado en la esquina o detrás) --- */}
-                        <div style={{
-                          position: 'absolute',
-                          // Configuración "En la esquina" superior derecha
-                          top: '-5px',
-                          right: '20px',
-                          // Configuración alternativa "Centrado" (descomentar si prefieres centrado)
-                          // left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center',
-
-                          zIndex: 0, // Detrás de la firma (la tinta de la firma suele estar sobre el sello)
-                          opacity: 0.8
-                        }}>
+                        {/* Capa 1: Sello */}
+                        <div style={{ position: 'absolute', top: '-5px', right: '20px', zIndex: 0, opacity: 0.8 }}>
                           {empresa.EmpresaID === 1 ? (
-                            <img
-                              src="../../src/assets/SelloInds.jpg"
-                              alt="Sello Empresa 1"
-                              style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }}
-                              onError={(e) => e.target.style.display = 'none'}
-                            />
+                            <img src="../../src/assets/SelloInds.jpg" alt="Sello Empresa 1" style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }} onError={(e) => e.target.style.display = 'none'} />
                           ) : (
-                            <img
-                              src="../../src/assets/SelloPlgn.jpg"
-                              alt="Sello Empresa 2"
-                              style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }}
-                              onError={(e) => e.target.style.display = 'none'}
-                            />
+                            <img src="../../src/assets/SelloPlgn.jpg" alt="Sello Empresa 2" style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }} onError={(e) => e.target.style.display = 'none'} />
                           )}
                         </div>
-
-                        {/* --- CAPA 2: FIRMA DEL USUARIO (Frente) --- */}
+                        {/* Capa 2: Firma */}
                         <div className="d-flex flex-column justify-content-end align-items-center h-100" style={{ position: 'relative', zIndex: 1 }}>
                           {data.vendedor?.UsuarioID ? (
                             <div className="mb-0" style={{ minHeight: '90px', display: 'flex', alignItems: 'flex-end' }}>
@@ -335,7 +256,6 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                           ) : (
                             <div className="mb-0" style={{ minHeight: '60px' }}></div>
                           )}
-
                           <div style={{ borderBottom: '1px solid #999', width: '80%', marginBottom: '10px' }}></div>
                           <span className="fw-bold text-uppercase small">Firma y Sello Autorizado</span>
                           <span className="small text-muted">{data.vendedor?.Username || user.username}</span>
@@ -352,17 +272,13 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
           </tr>
         </tbody>
 
-        {/* 3. FOOTER SPACE (Para que no se monte sobre el footer fijo) */}
+        {/* 3. FOOTER SPACE */}
         <tfoot>
-          <tr>
-            <td>
-              <div className="footer-space"></div>
-            </td>
-          </tr>
+          <tr><td><div className="footer-space"></div></td></tr>
         </tfoot>
       </table>
 
-      {/* 4. FOOTER FIXED (Fijo en todas las páginas) */}
+      {/* 4. FOOTER FIXED */}
       <div className="print-footer-fixed d-flex align-items-end justify-content-center pb-3">
         {empresa.EmpresaID === 1 ? <FooterStyleA /> : <FooterStyleB />}
       </div>

@@ -26,6 +26,19 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
         .then(res => {
             const data = res.data;
             
+            // --- GENERAR TEXTO DE TÉRMINOS (Igual que en CreateQuotation) ---
+            // Como no guardamos el texto editado en la BD, regeneramos el default con los datos de la empresa
+            const termsContent = `NOTA: EN CASO DE DETECTARSE ERRORES ARITMÉTICOS EN LOS CÁLCULOS, LA COTIZACIÓN SERÁ CORREGIDA Y ACTUALIZADA DE INMEDIATO, NOTIFICANDO AL CLIENTE. LOS VALORES CORRECTOS PREVALECERÁN SOBRE CUALQUIER ERROR TIPOGRÁFICO O DE CÁLCULO. LA ACEPTACIÓN DE ESTA COTIZACIÓN IMPLICA EL RECONOCIMIENTO DE ESTA CONDICIÓN. LAS IMÁGENES SON DE FIN ILUSTRATIVO, SUJETAS A CAMBIOS.
+GARANTÍA: 1 AÑO POR DESPERFECTO DE FABRICACIÓN VALIDEZ DE LA OFERTA: 7 DÍAS CALENDARIO PRECIO INCLUYE IVA Y TRANSPORTE
+CONDICIÓN DE PAGO: CHEQUE O AL CONTADO
+CHEQUE A NOMBRE DE: JEREMÍAS DE JESÚS ARTIGA DE PAZ
+RAZÓN SOCIAL: JEREMÍAS DE JESÚS ARTIGA DE PAZ
+CONTACTO DE LA EMPRESA:
+DIRECCIÓN: CARRETERA A SONSONATE, KM. 24, EDIFICIO GP DON BOSCO, DISTRITO DE COLON, MUNICIPIO DE LA LIBERTAD OESTE
+TELÉFONO: ${data.TelefonoEmpresa || ''}
+NIT: ${data.NIT || ''}
+Registro: ${data.NRC || ''}`;
+
             const formattedData = {
                 cliente: {
                     NombreCliente: data.NombreCliente,
@@ -61,7 +74,8 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
                     Celular: data.CelularEmpresa,
                     CorreoElectronico: data.EmailEmpresa,
                     PaginaWeb: data.WebEmpresa
-                }
+                },
+                terminos: termsContent // <--- IMPORTANTE: Pasamos el texto generado aquí
             };
             setQuoteData(formattedData);
             setLoading(false);
@@ -138,7 +152,6 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
                         </div>
 
                         {/* ZONA DERECHA: ACCIONES */}
-                        {/* CAMBIO AQUÍ: Eliminé 'justify-content-between' y reorganicé los divs */}
                         <div className="bg-white p-4 border-start shadow-sm d-flex flex-column gap-4" style={{ minWidth: '320px' }}>
                             
                             {/* Grupo 1: Imprimir */}
@@ -149,7 +162,7 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
                                 </Button>
                             </div>
 
-                            {/* Información de Estado (si está rechazada) */}
+                            {/* Información de Estado */}
                             {quoteData?.estado === 'Rechazada' && quoteData?.usuarioDecision && (
                                 <div className="alert alert-danger border-0 shadow-sm">
                                     <h6 className="fw-bold mb-2">❌ Cotización Rechazada</h6>
@@ -168,7 +181,7 @@ const QuoteDetailModal = ({ show, onHide, quoteId, onStatusChange }) => {
                                 </div>
                             )}
                             
-                            {/* Grupo 2: Decisión (Ahora aparece justo abajo, no al final) */}
+                            {/* Grupo 2: Decisión */}
                             <div className="pt-3 border-top">
                                 <h6 className="fw-bold mb-3 text-secondary">Decisión del Cliente</h6>
                                 

@@ -26,6 +26,15 @@ const EditOrderModal = ({ show, onHide, order, onSuccess }) => {
   const [fileAnticipo, setFileAnticipo] = useState(null);
   const [fileComplemento, setFileComplemento] = useState(null);
 
+  // --- FUNCIÓN HELPER PARA FORMATEAR MONEDA ---
+  const formatMoney = (amount) => {
+    const num = parseFloat(amount) || 0;
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
   // Cargar opciones
   useEffect(() => {
     if (show) {
@@ -239,8 +248,9 @@ const EditOrderModal = ({ show, onHide, order, onSuccess }) => {
               </Row>
 
               <div className="mt-3 text-center p-2 bg-light rounded">
-                <span className="me-4 text-success fw-bold">Pagado: ${totalPagado.toFixed(2)}</span>
-                <span className="text-danger fw-bold">Pendiente: ${pendiente.toFixed(2)}</span>
+                {/* AQUI APLICAMOS EL FORMATO */}
+                <span className="me-4 text-success fw-bold">Pagado: ${formatMoney(totalPagado)}</span>
+                <span className="text-danger fw-bold">Pendiente: ${formatMoney(pendiente)}</span>
               </div>
             </Card.Body>
           </Card>

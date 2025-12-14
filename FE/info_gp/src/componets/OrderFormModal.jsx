@@ -33,6 +33,15 @@ const OrderFormModal = ({ show, onHide, quotation, onSuccess }) => {
   const [diasRestantes, setDiasRestantes] = useState(null);
   const [resumen, setResumen] = useState({ total: 0, pagado: 0, pendiente: 0 });
 
+  // --- FUNCIÓN HELPER PARA FORMATEAR MONEDA ---
+  const formatMoney = (amount) => {
+    const num = parseFloat(amount) || 0;
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
   // 1. Cargar opciones del backend (Métodos de pago, Estados)
   useEffect(() => {
     if (show) {
@@ -122,7 +131,8 @@ const OrderFormModal = ({ show, onHide, quotation, onSuccess }) => {
                     <Row className="g-3">
                         <Col md={3}>
                             <Form.Label className="small fw-bold">MONTO VENTA</Form.Label>
-                            <Form.Control value={`$${resumen.total.toFixed(2)}`} disabled className="fw-bold text-success bg-white" />
+                            {/* AQUI APLICAMOS EL FORMATO */}
+                            <Form.Control value={`$${formatMoney(resumen.total)}`} disabled className="fw-bold text-success bg-white" />
                         </Col>
                         <Col md={9}>
                             <Form.Label className="small fw-bold">PRODUCTOS</Form.Label>
@@ -200,8 +210,9 @@ const OrderFormModal = ({ show, onHide, quotation, onSuccess }) => {
                     </Row>
 
                     <div className="mt-3 text-center p-2 bg-light rounded">
-                        <span className="me-4 text-success fw-bold">Pagado: ${resumen.pagado.toFixed(2)}</span>
-                        <span className="text-danger fw-bold">Pendiente: ${resumen.pendiente.toFixed(2)}</span>
+                        {/* AQUI APLICAMOS EL FORMATO */}
+                        <span className="me-4 text-success fw-bold">Pagado: ${formatMoney(resumen.pagado)}</span>
+                        <span className="text-danger fw-bold">Pendiente: ${formatMoney(resumen.pendiente)}</span>
                     </div>
                 </Card.Body>
             </Card>

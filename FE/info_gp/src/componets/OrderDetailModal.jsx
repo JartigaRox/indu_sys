@@ -11,6 +11,15 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
 
   const componentRef = useRef(null);
   
+  // --- FUNCIÓN HELPER PARA FORMATEAR MONEDA ---
+  const formatMoney = (amount) => {
+    const num = parseFloat(amount) || 0;
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
     documentTitle: orderData ? `Orden-${orderData.numeroOrden}` : 'Documento',
@@ -174,15 +183,18 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
                     <h6 className="fw-bold mb-3 small text-secondary">RESUMEN FINANCIERO</h6>
                     <div className="d-flex justify-content-between mb-2">
                       <span className="small">Monto Total:</span>
-                      <strong className="text-inst-blue">${parseFloat(orderData?.montoVenta || 0).toFixed(2)}</strong>
+                      {/* AQUI APLICAMOS EL FORMATO */}
+                      <strong className="text-inst-blue">${formatMoney(orderData?.montoVenta)}</strong>
                     </div>
                     <div className="d-flex justify-content-between mb-2">
                       <span className="small text-success">Total Pagado:</span>
-                      <strong className="text-success">${parseFloat(orderData?.totalPagado || 0).toFixed(2)}</strong>
+                      {/* AQUI APLICAMOS EL FORMATO */}
+                      <strong className="text-success">${formatMoney(orderData?.totalPagado)}</strong>
                     </div>
                     <div className="d-flex justify-content-between pt-2 border-top mb-3">
                       <span className="small fw-bold">Pendiente:</span>
-                      <strong className="text-danger">${parseFloat(orderData?.pagoPendiente || 0).toFixed(2)}</strong>
+                      {/* AQUI APLICAMOS EL FORMATO */}
+                      <strong className="text-danger">${formatMoney(orderData?.pagoPendiente)}</strong>
                     </div>
 
                     {/* Comprobantes de Pago */}
@@ -200,7 +212,8 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
                               <div>
                                 <div className="small fw-bold">Anticipo</div>
                                 <div className="small text-muted">
-                                  ${parseFloat(orderData?.pagoAnticipo || 0).toFixed(2)}
+                                  {/* AQUI APLICAMOS EL FORMATO */}
+                                  ${formatMoney(orderData?.pagoAnticipo)}
                                   {orderData?.MetodoAnticipoNombre && (
                                     <span className="ms-2">| <span className="fw-semibold">{orderData.MetodoAnticipoNombre}</span></span>
                                   )}
@@ -224,7 +237,8 @@ const OrderDetailModal = ({ show, onHide, orderId, onRefresh }) => {
                               <div>
                                 <div className="small fw-bold">Complemento</div>
                                 <div className="small text-muted">
-                                  ${parseFloat(orderData?.pagoComplemento || 0).toFixed(2)}
+                                  {/* AQUI APLICAMOS EL FORMATO */}
+                                  ${formatMoney(orderData?.pagoComplemento)}
                                   {orderData?.MetodoComplementoNombre && (
                                     <span className="ms-2">| <span className="fw-semibold">{orderData.MetodoComplementoNombre}</span></span>
                                   )}
