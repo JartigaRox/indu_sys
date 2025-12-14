@@ -82,17 +82,17 @@ const Orders = () => {
       filtered = filtered.filter(o => o.EstadoNombre === filterStatus);
     }
 
-    // Ordenar: pagadas y finalizadas al final
+    // Ordenar: "Pagado y finalizado" al final de la lista
     filtered.sort((a, b) => {
-      const aPagadaYFinalizada = (a.PagoPendiente <= 0 && a.EstadoNombre === 'Pagado y finalizado');
-      const bPagadaYFinalizada = (b.PagoPendiente <= 0 && b.EstadoNombre === 'Pagado y finalizado');
+      const aEsFinalizado = a.EstadoNombre === 'Pagado y finalizado';
+      const bEsFinalizado = b.EstadoNombre === 'Pagado y finalizado';
       
-      // Si a está completada pero b no, a va después (return 1)
-      if (aPagadaYFinalizada && !bPagadaYFinalizada) return 1;
-      // Si b está completada pero a no, b va después (return -1)
-      if (!aPagadaYFinalizada && bPagadaYFinalizada) return -1;
+      // Si a es finalizado y b no, a va después (return 1)
+      if (aEsFinalizado && !bEsFinalizado) return 1;
+      // Si b es finalizado y a no, b va después (return -1)
+      if (!aEsFinalizado && bEsFinalizado) return -1;
       
-      // Si ambas tienen el mismo estado de completitud, ordenar por fecha (más reciente primero)
+      // Si ambos tienen la misma condición, ordenar por fecha de creación (más reciente primero)
       return new Date(b.FechaCreacion) - new Date(a.FechaCreacion);
     });
 

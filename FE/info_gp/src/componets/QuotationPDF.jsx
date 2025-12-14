@@ -5,11 +5,23 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
   if (!data || !data.empresa) return null;
 
   const { cliente, items, user, numeroCotizacion, fecha, empresa } = data;
+  
+  // Calcular total
   const total = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
+  
   const mainColor = empresa.EmpresaID === 1 ? '#008CB4' : '#D4AF37';
   
   // Generar timestamp único para refrescar la imagen de la firma si cambia
   const imageTimestamp = useMemo(() => Date.now(), [data.vendedor?.UsuarioID]);
+
+  // --- FUNCIÓN HELPER PARA FORMATEAR MONEDA ---
+  const formatNumber = (amount) => {
+    const num = parseFloat(amount) || 0;
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
 
   // --- ESTILOS DE ENCABEZADO ---
   const HeaderStyleA = () => (
@@ -137,10 +149,6 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                 {items.map((item, i) => {
                   // --- LÓGICA ANTI-DUPLICADOS ---
                   const rawDesc = item.descripcion ? String(item.descripcion) : "";
-                  // 1. Dividir por saltos de línea
-                  // 2. Limpiar espacios
-                  // 3. Filtrar líneas vacías
-                  // 4. Usar Set para eliminar duplicados exactos
                   const descLines = [
                     ...new Set(
                       rawDesc.split('\n')
@@ -220,12 +228,12 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                             PRECIO UNITARIO
                           </td>
                           <td className="text-center align-middle fw-bold" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
-                            ${parseFloat(item.precio || 0).toFixed(2)}
+                            ${formatNumber(item.precio)}
                           </td>
                           <td className="align-middle" style={{ border: '1px solid black', padding: '8px' }}>
                             <div className="d-flex justify-content-between align-items-center px-2">
                               <span className="fw-bold" style={{ fontSize: '11px' }}>PRECIO TOTAL</span>
-                              <span className="fw-bold" style={{ fontSize: '12px' }}>${(item.cantidad * item.precio).toFixed(2)}</span>
+                              <span className="fw-bold" style={{ fontSize: '12px' }}>${formatNumber(item.cantidad * item.precio)}</span>
                             </div>
                           </td>
                         </tr>
@@ -239,7 +247,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                     <div className="d-flex justify-content-end mb-5">
                         <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: mainColor, minWidth: '250px', display:'flex', justifyContent:'space-between', fontSize: '14px' }}>
                         <span>TOTAL DE LA COTIZACION:  </span>
-                        <span> <strong>${total.toFixed(2)}</strong></span>
+                        <span> <strong>${formatNumber(total)}</strong></span>
                         </div>
                     </div>
                 </div>

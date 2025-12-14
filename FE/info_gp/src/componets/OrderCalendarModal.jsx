@@ -29,7 +29,7 @@ const OrderCalendarModal = ({ show, onHide, orders }) => {
     if (!orders) return [];
     
     return orders
-      .filter(order => order.FechaEntrega) // Solo órdenes con fecha de entrega
+      .filter(order => order.FechaEntrega && order.EstadoNombre !== 'Pagado y finalizado') // Filtro añadido aquí
       .map(order => {
         const date = new Date(order.FechaEntrega);
         // Establecer hora a medianoche para evitar problemas de zona horaria
