@@ -179,9 +179,9 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                                 alt={item.nombre}
                                 style={{
                                   width: '100%',
-                                  maxWidth: '200px',
+                                  maxWidth: '180px',
                                   height: 'auto',
-                                  maxHeight: '200px',
+                                  maxHeight: '180px',
                                   objectFit: 'contain'
                                 }}
                                 onError={(e) => e.target.style.display = 'none'}
@@ -246,7 +246,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                 <div className="mt-4">
                   <div className="d-flex justify-content-end mb-5">
                     <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: mainColor, minWidth: '250px', display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                      <span>TOTAL DE LA COTIZACION:  </span>
+                      <span>TOTAL DE LA COTIZACION:  </span>
                       <span> <strong>${formatNumber(total)}</strong></span>
                     </div>
                   </div>
@@ -254,7 +254,8 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
 
                 {/* Términos, Firmas y Sellos */}
                 <div className="avoid-break">
-                  <div className="border rounded p-3 bg-white text-secondary" style={{ fontSize: '10px' }}>
+                  {/* CAMBIO 1: Aumentado de p-3 a p-4 para más espacio interno */}
+                  <div className="border rounded p-4 bg-white text-secondary" style={{ fontSize: '10px' }}>
                     <div className="row">
                       {/* Términos y Condiciones */}
                       <div className="col-8">
@@ -274,7 +275,8 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                       </div>
 
                       {/* ÁREA DE FIRMAS Y SELLOS SUPERPUESTOS */}
-                      <div className="col-4 text-center" style={{ height: '230px', position: 'relative' }}>
+                      {/* CAMBIO 2: Agregado marginTop: '40px' para bajar toda esta sección */}
+                      <div className="col-4 text-center" style={{ height: '230px', position: 'relative', marginTop: '40px' }}>
 
                         {/* --- CAPA 1: SELLO (Posicionado en la esquina o detrás) --- */}
                         <div style={{
@@ -308,24 +310,20 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                         {/* --- CAPA 2: FIRMA DEL USUARIO (Frente) --- */}
                         <div className="d-flex flex-column justify-content-end align-items-center h-100" style={{ position: 'relative', zIndex: 1 }}>
                           {data.vendedor?.UsuarioID ? (
-                            <div className="mb-2" style={{ minHeight: '60px', display: 'flex', alignItems: 'flex-end' }}>
+                            <div className="mb-0" style={{ minHeight: '90px', display: 'flex', alignItems: 'flex-end' }}>
                               <img
-                                // AGREGAR ESTA LÍNEA (key):
                                 key={data.vendedor.UsuarioID}
-
                                 src={`http://localhost:5000/api/auth/users/${data.vendedor.UsuarioID}/signature?t=${imageTimestamp}`}
                                 alt="Firma"
                                 style={{ maxWidth: '200px', maxHeight: '80px', objectFit: 'contain' }}
-                                // Al cambiar de usuario, React creará una imagen nueva, 
-                                // eliminando el estilo 'display: none' que haya puesto el onError anterior.
                                 onError={(e) => { e.target.style.display = 'none'; }}
                               />
                             </div>
                           ) : (
-                            <div className="mb-2" style={{ minHeight: '60px' }}></div>
+                            <div className="mb-0" style={{ minHeight: '60px' }}></div>
                           )}
 
-                          <div style={{ borderBottom: '1px solid #999', width: '80%', marginBottom: '5px' }}></div>
+                          <div style={{ borderBottom: '1px solid #999', width: '80%', marginBottom: '10px' }}></div>
                           <span className="fw-bold text-uppercase small">Firma y Sello Autorizado</span>
                           <span className="small text-muted">{data.vendedor?.Username || user.username}</span>
                           <span className="small text-muted">{empresa.Celular}</span>
