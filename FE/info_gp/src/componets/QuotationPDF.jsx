@@ -128,20 +128,20 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                 <div className="row mb-4 avoid-break" style={empresa.EmpresaID === 2 ? { marginTop: '-40px' } : {}}>
                   <div className="col-12"><h6 className="fw-bold border-bottom pb-1" style={{ color: mainColor, borderColor: mainColor }}>CLIENTE</h6></div>
                   <div className="col-8">
-                    <p className="mb-0 text-muted small">Lourdes colón, {new Date(fecha).toLocaleDateString()}</p>
+                    <p className="mb-0 text small">Lourdes colón, {new Date(fecha).toLocaleDateString()}</p>
                     <p className="fw-bold mb-0 fs-6">{cliente?.NombreCliente}</p>
                     <p className="mb-0"><strong>Atención A:</strong> {cliente?.AtencionA || 'N/A'}</p>
-                    <p className="mb-0 text-muted small">{cliente?.Telefono}</p>
-                    <p className="mb-0 text-muted small">
+                    <p className="mb-0 text small">{cliente?.Telefono}</p>
+                    <p className="mb-0 text small">
                       {cliente?.DireccionCalle}
                       {cliente?.Distrito && `, ${cliente.Distrito}`}
                       {cliente?.Municipio && `, ${cliente.Municipio}`}
                       {cliente?.Departamento && `, ${cliente.Departamento}`}
                     </p>
                     <p></p>
-                    <p className="mb-0 text-muted small">PRESENTE</p>
+                    <p className="mb-0 text small">PRESENTE</p>
                     <p></p>
-                    <p className="mb-0 text-muted small">NOS COMPLACE ENNVIARLE LA SIGUIENTE COTIZACIÓN PARA LOS SUMINISTROS DE:</p>
+                    <p className="mb-0 text small">NOS COMPLACE ENNVIARLE LA SIGUIENTE COTIZACIÓN PARA LOS SUMINISTROS DE:</p>
                   </div>
                 </div>
 
@@ -254,9 +254,21 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
 
                 {/* Términos, Firmas y Sellos */}
                 <div className="avoid-break">
-                  {/* CAMBIO 1: Aumentado de p-3 a p-4 para más espacio interno */}
-                  <div className="border rounded p-4 bg-white text-secondary" style={{ fontSize: '10px' }}>
-                    <div className="row">
+                  
+                  {/* === CORRECCIÓN DE ESPACIADO === */}
+                  {/* Se elimina 'border rounded bg-white' y 'p-X' para usar estilos inline puros */}
+                  <div 
+                    className="text-secondary" 
+                    style={{ 
+                      fontSize: '10px', 
+                      border: '1px solid #cccccc',  // Borde gris explícito
+                      borderRadius: '5px',          // Bordes redondeados explícitos
+                      backgroundColor: '#ffffff',   // Fondo blanco explícito
+                      padding: '15px'               // Padding explícito GRANDE (35px)
+                    }}
+                  >
+                    <div className="row m-0"> {/* m-0 para que el row no se coma el padding */}
+                      
                       {/* Términos y Condiciones */}
                       <div className="col-8">
                         <h6 className="fw-bold mb-2 text-dark">TÉRMINOS Y CONDICIONES:</h6>
@@ -275,8 +287,9 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                       </div>
 
                       {/* ÁREA DE FIRMAS Y SELLOS SUPERPUESTOS */}
-                      {/* CAMBIO 2: Agregado marginTop: '40px' para bajar toda esta sección */}
-                      <div className="col-4 text-center" style={{ height: '230px', position: 'relative', marginTop: '40px' }}>
+                      {/* === CORRECCIÓN DE POSICIÓN FIRMA === */}
+                      {/* Se aumentó marginTop a 60px para bajar más la sección */}
+                      <div className="col-4 text-center" style={{ height: '230px', position: 'relative', marginTop: '60px' }}>
 
                         {/* --- CAPA 1: SELLO (Posicionado en la esquina o detrás) --- */}
                         <div style={{
