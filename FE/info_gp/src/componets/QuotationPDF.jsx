@@ -274,41 +274,38 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                             </div>
                             
                             {/* ÁREA DE FIRMAS Y SELLOS SUPERPUESTOS */}
-                            <div className="col-4 text-center" style={{ height: '120px', position: 'relative' }}>
+                            <div className="col-4 text-center" style={{ height: '230px', position: 'relative' }}>
                                 
-                                {/* --- CAPA 1: SELLO DE LA EMPRESA (FONDO) --- */}
+                                {/* --- CAPA 1: SELLO (Posicionado en la esquina o detrás) --- */}
                                 <div style={{ 
                                     position: 'absolute', 
-                                    top: '-20px', 
-                                    left: '0', 
-                                    width: '100%', 
-                                    height: '100%', 
-                                    display: 'flex', 
-                                    justifyContent: 'center', 
-                                    alignItems: 'center', 
-                                    zIndex: 0, 
-                                    opacity: 0.8 
+                                    // Configuración "En la esquina" superior derecha
+                                    top: '-5px', 
+                                    right: '20px', 
+                                    // Configuración alternativa "Centrado" (descomentar si prefieres centrado)
+                                    // left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center',
+                                    
+                                    zIndex: 0, // Detrás de la firma (la tinta de la firma suele estar sobre el sello)
+                                    opacity: 0.8
                                 }}>
                                     {empresa.EmpresaID === 1 ? (
-                                      /* Sello Empresa 1 */
                                       <img 
-                                        src="../../src/assets/gp.png" 
+                                        src="../../src/assets/SelloInds.jpg" 
                                         alt="Sello Empresa 1" 
-                                        style={{ width: '140px', objectFit: 'contain' }} 
+                                        style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }} 
                                         onError={(e) => e.target.style.display = 'none'}
                                       />
                                     ) : (
-                                      /* Sello Empresa 2 */
                                       <img 
-                                        src="../../src/assets/OP.png" 
+                                        src="../../src/assets/SelloPlgn.jpg" 
                                         alt="Sello Empresa 2" 
-                                        style={{ width: '140px', objectFit: 'contain' }} 
+                                        style={{ width: '90px', objectFit: 'contain', mixBlendMode: 'multiply' }} 
                                         onError={(e) => e.target.style.display = 'none'}
                                       />
                                     )}
                                 </div>
 
-                                {/* --- CAPA 2: FIRMA DEL USUARIO (FRENTE) --- */}
+                                {/* --- CAPA 2: FIRMA DEL USUARIO (Frente) --- */}
                                 <div className="d-flex flex-column justify-content-end align-items-center h-100" style={{ position: 'relative', zIndex: 1 }}>
                                     {data.vendedor?.UsuarioID ? (
                                       <div className="mb-2" style={{ minHeight: '60px', display:'flex', alignItems:'flex-end' }}>
