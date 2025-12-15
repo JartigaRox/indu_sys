@@ -41,10 +41,11 @@ const Quotations = () => {
 
     const lowerTerm = searchTerm.toLowerCase();
     const filtered = quotes.filter(q => 
-      q.NumeroCotizacion.toLowerCase().includes(lowerTerm) ||
-      q.NombreCliente.toLowerCase().includes(lowerTerm) ||
-      q.NombreEmpresa.toLowerCase().includes(lowerTerm) ||
-      q.Estado.toLowerCase().includes(lowerTerm)
+      // Agregamos ( || '') para evitar errores si el campo viene null
+      (q.NumeroCotizacion || '').toLowerCase().includes(lowerTerm) ||
+      (q.NombreCliente || '').toLowerCase().includes(lowerTerm) ||
+      (q.NombreEmpresa || '').toLowerCase().includes(lowerTerm) ||
+      (q.Estado || '').toLowerCase().includes(lowerTerm)
     );
     setFilteredQuotes(filtered);
   }, [searchTerm, quotes]);
@@ -111,6 +112,7 @@ const Quotations = () => {
           {loading && <div className="text-center p-5"><Spinner animation="border" /></div>}
           {error && <Alert variant="danger" className="m-3">{error}</Alert>}
           
+          {/* Mensaje si no hay datos en absoluto */}
           {!loading && !error && quotes.length === 0 && (
             <div className="text-center p-5 text-muted">
                 <FileText size={48} className="mb-3 opacity-50" />
@@ -118,7 +120,16 @@ const Quotations = () => {
             </div>
           )}
 
-          {!loading && quotes.length > 0 && (
+          {/* Mensaje si hay datos pero la búsqueda no arroja resultados */}
+          {!loading && !error && quotes.length > 0 && filteredQuotes.length === 0 && (
+             <div className="text-center p-5 text-muted">
+                <Search size={32} className="mb-3 opacity-50" />
+                <p>No se encontraron resultados para "{searchTerm}".</p>
+             </div>
+          )}
+
+          {/* Tabla de resultados */}
+          {!loading && filteredQuotes.length > 0 && (
             <Table hover responsive className="mb-0 align-middle">
               <thead className="bg-light text-secondary small text-uppercase">
                 <tr>
@@ -131,12 +142,13 @@ const Quotations = () => {
                 </tr>
               </thead>
               <tbody>
-                {quotes.map(q => (
+                {/* CORRECCIÓN AQUÍ: Usamos filteredQuotes en lugar de quotes */}
+                {filteredQuotes.map(q => (
                   <tr key={q.CotizacionID}>
                     <td className="ps-4 fw-bold text-inst-blue">{q.NumeroCotizacion}</td>
                     <td>
                         <div className="fw-bold text-dark">{q.NombreCliente}</div>
-                        <div className="small text-muted" style={{fontSize:'0.8em'}}>{q.NombreEmpresa}</div>
+                        <div className="small text-muted" style={{fontSize:'0.8em'}}>{q.NombreEmpresa || 'Sin empresa'}</div>
                     </td>
                     <td><div className="small text-muted d-flex align-items-center gap-1"><Calendar size={14}/> {q.FechaRealizacion ? q.FechaRealizacion.split('T')[0].split('-').reverse().join('/') : 'N/A'}</div></td>
                     <td className="text-end fw-bold">${q.TotalCotizacion ? q.TotalCotizacion.toFixed(2) : '0.00'}</td>

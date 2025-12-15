@@ -31,6 +31,8 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
                     password: '',
                     confirmPassword: ''
                 });
+                setFirmaPreview(null); // Reseteamos la preview al abrir
+                setFirmaFile(null);
             }
         }
     }, [show, user]);
@@ -55,6 +57,51 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
         });
     };
 
+    // --- NUEVA LÓGICA: Manejar cambio de Rol ---
+    const handleRoleChange = (e) => {
+        const newRolId = parseInt(e.target.value);
+        
+        // Buscamos los objetos de referencia
+        const sudoRole = roles.find(r => r.NombreRol === 'sudo');
+        const oficinaType = sellerTypes.find(t => t.Nombre === 'Oficina');
+
+        let newSellerTypeId = formData.tipoVendedorId;
+
+        // Si elige SUDO, forzamos tipo "Oficina"
+        if (sudoRole && newRolId === sudoRole.RolID) {
+            if (oficinaType) newSellerTypeId = oficinaType.TipoVendedorID;
+        } 
+        // Si cambia a OPERADOR y tenía "Oficina", lo limpiamos para que elija uno válido
+        else {
+            if (oficinaType && parseInt(newSellerTypeId) === oficinaType.TipoVendedorID) {
+                newSellerTypeId = '';
+            }
+        }
+
+        setFormData({
+            ...formData,
+            rolId: newRolId,
+            tipoVendedorId: newSellerTypeId
+        });
+    };
+
+    // --- NUEVA LÓGICA: Filtrar Tipos de Vendedor ---
+    const getFilteredSellerTypes = () => {
+        const sudoRole = roles.find(r => r.NombreRol === 'sudo');
+        // Verificamos si el rol seleccionado es Admin
+        const isSudo = sudoRole && parseInt(formData.rolId) === sudoRole.RolID;
+
+        return sellerTypes.filter(type => {
+            if (isSudo) {
+                // Si es Admin, SOLO mostramos Oficina
+                return type.Nombre === 'Oficina';
+            } else {
+                // Si es Operador, mostramos TODO MENOS Oficina
+                return type.Nombre !== 'Oficina';
+            }
+        });
+    };
+
     const handleFirmaChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -75,7 +122,6 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
             return;
         }
 
-        // Validar que las contraseñas coincidan si se está cambiando
         if (formData.password && formData.password !== formData.confirmPassword) {
             Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
             return;
@@ -148,7 +194,7 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
                                 <Form.Select
                                     name="rolId"
                                     value={formData.rolId}
-                                    onChange={handleChange}
+                                    onChange={handleRoleChange} // Usamos el nuevo handler
                                     required
                                 >
                                     <option value="">Seleccione un rol</option>
@@ -169,7 +215,8 @@ const EditUserModal = ({ show, onHide, user, onSave }) => {
                                     onChange={handleChange}
                                 >
                                     <option value="">Seleccione un tipo</option>
-                                    {sellerTypes.map(type => (
+                                    {/* Usamos la función de filtrado */}
+                                    {getFilteredSellerTypes().map(type => (
                                         <option key={type.TipoVendedorID} value={type.TipoVendedorID}>
                                             {type.Nombre}
                                         </option>
