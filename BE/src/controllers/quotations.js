@@ -152,6 +152,42 @@ export const getQuoteById = async (req, res) => {
 };
 
 // ... Resto de funciones (getQuotes, updateQuoteStatus, etc.) se mantienen igual ...
-export const getQuotes = async (req, res) => { try { const pool = await getConnection(); const result = await pool.request().query(`SELECT c.CotizacionID, c.NumeroCotizacion, c.FechaRealizacion, c.TotalCotizacion, c.Estado, cli.NombreCliente, e.Nombre as NombreEmpresa FROM Cotizaciones c INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID ORDER BY c.FechaRealizacion DESC`); res.json(result.recordset); } catch (error) { res.status(500).json({ message: error.message }); } };
+// Obtener listado de Cotizaciones (Filtrado por Rol)
+export const getQuotes = async (req, res) => {
+    try {
+        const pool = await getConnection();
+        const request = pool.request(); // Creamos el request primero para poder agregar inputs dinámicos
+
+        // Query base (tu misma query original)
+        let query = `
+            SELECT 
+                c.CotizacionID, 
+                c.NumeroCotizacion, 
+                c.FechaRealizacion, 
+                c.TotalCotizacion, 
+                c.Estado, 
+                cli.NombreCliente, 
+                e.Nombre as NombreEmpresa 
+            FROM Cotizaciones c 
+            INNER JOIN Clientes cli ON c.ClienteID = cli.ClienteID 
+            LEFT JOIN Empresas e ON c.EmpresaID = e.EmpresaID
+        `;
+
+        // --- LÓGICA DE SEGURIDAD ---
+        // Si el usuario NO es admin (Rol 1), filtramos por su ID de Vendedor
+        if (req.user.rolId !== 1) {
+            query += " WHERE c.VendedorID = @userId";
+            request.input("userId", sql.Int, req.user.id);
+        }
+
+        // Agregamos el ordenamiento al final
+        query += " ORDER BY c.FechaRealizacion DESC";
+
+        const result = await request.query(query);
+        res.json(result.recordset);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 export const updateQuoteStatus = async (req, res) => { const { id } = req.params; const { status } = req.body; if (!id || !status) return res.status(400).json({ message: 'Requeridos ID y status' }); const usuarioDecision = req.user ? req.user.username : 'Sistema'; try { const pool = await getConnection(); const cotId = parseInt(id); if (status === 'Rechazada') await pool.request().input("id", sql.Int, cotId).query("DELETE FROM Ordenes WHERE CotizacionID = @id"); await pool.request().input("id", sql.Int, cotId).input("st", sql.NVarChar, status).input("usr", sql.NVarChar, usuarioDecision).query("UPDATE Cotizaciones SET Estado = @st, UsuarioDecision = @usr WHERE CotizacionID = @id"); res.json({ message: "Estado actualizado" }); } catch (error) { res.status(500).json({ message: error.message }); } };
 export const getNextQuoteNumber = async (req, res) => { try { const pool = await getConnection(); const result = await pool.request().query("SELECT ISNULL(MAX(CotizacionID), 0) + 1 as NextID FROM Cotizaciones"); res.json({ nextId: result.recordset[0].NextID }); } catch (error) { res.status(500).json({ message: error.message }); } };

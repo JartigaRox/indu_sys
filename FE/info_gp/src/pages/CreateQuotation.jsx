@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
-import { Plus, Printer, Save, ArrowLeft, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Printer, Save, ArrowLeft, Trash2, Edit2, Copy } from 'lucide-react'; // Agregué icono Copy
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select'; 
 import { useReactToPrint } from 'react-to-print';
@@ -13,7 +13,9 @@ const CreateQuotation = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
-  const isEditMode = !!id;
+  
+  // Usamos el ID solo para "cargar datos base", no para editar el registro existente
+  const isCloneMode = !!id; 
   
   const printRef = useRef(null);
 
@@ -57,6 +59,8 @@ const CreateQuotation = () => {
   const clientData = clients.find(c => c.ClienteID === selectedClient?.value);
   const companyData = companies.find(c => c.EmpresaID === parseInt(selectedCompanyId));
   const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'XX';
+  
+  // Siempre mostramos el "Siguiente ID" porque SIEMPRE vamos a crear una nueva
   const displayId = nextId ? nextId.toString().padStart(6, '0') : '000000';
   const quoteNumber = `${initials}-${displayId}`; 
 
@@ -76,10 +80,6 @@ const CreateQuotation = () => {
   // Efecto para cargar el texto por defecto de los términos cuando cambia la empresa
   useEffect(() => {
     if (selectedCompanyId && companies.length > 0) {
-      // Solo establecemos el default si estamos creando nuevo, o si es edición pero no hay términos guardados aún
-      // Sin embargo, para simplificar, si el usuario ya escribió algo (terms !== ""), no lo sobrescribimos automáticamente
-      // a menos que sea la carga inicial o cambio explícito de empresa en modo creación.
-      
       const comp = companies.find(c => c.EmpresaID === parseInt(selectedCompanyId));
       
       if (comp) {
@@ -89,18 +89,18 @@ CONDICIÓN DE PAGO: CHEQUE O AL CONTADO
 CHEQUE A NOMBRE DE: JEREMÍAS DE JESÚS ARTIGA DE PAZ
 RAZÓN SOCIAL: JEREMÍAS DE JESÚS ARTIGA DE PAZ
 CONTACTO DE LA EMPRESA:
-DIRECCIÓN: CARRETERA A SONSONATE, KM. 24, EDIFICIO GP DON BOSCO, DISTRITO DE COLON, MUNICIPIO DE LA LIBERTAD OESTE
-TELÉFONO: ${comp.Telefono || ''}
-NIT: ${comp.NIT || ''}
-Registro: ${comp.NRC || ''}`;
+DIRECCIÓN: {{DIRECCION}}
+TELÉFONO: {{TELEFONO}}
+NIT: {{NIT}}
+Registro: {{NRC}}`;
         
-        // Si el campo está vacío, ponemos el default
+        // Solo ponemos el default si está vacío (carga inicial)
         if(terms === "") {
              setTerms(defaultTerms);
         }
       }
     }
-  }, [selectedCompanyId, companies]); // NOTA: Quitamos 'terms' de dependencias para evitar loops
+  }, [selectedCompanyId, companies]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -128,7 +128,8 @@ Registro: ${comp.NRC || ''}`;
 
         if (companiesData.length > 0) setSelectedCompanyId(companiesData[0].EmpresaID);
 
-        if (isEditMode) {
+        // Si hay ID en la URL, cargamos los datos para PRE-LLENAR el formulario (Clonar)
+        if (isCloneMode) {
             try {
                 const resQuote = await api.get(`/quotations/${id}`);
                 const q = resQuote.data;
@@ -146,17 +147,19 @@ Registro: ${comp.NRC || ''}`;
                     descripcion: i.Descripcion || '', imagenURL: i.ImagenURL, cantidad: i.Cantidad, precio: i.PrecioUnitario
                 })));
 
-                // MODIFICADO: Cargar términos guardados si existen
                 if (q.Terminos) {
                     setTerms(q.Terminos);
                 }
 
-            } catch (error) { Swal.fire('Error', 'Error cargando cotización', 'error'); }
+                // NOTA: NO seteamos nextId con el ID de la cotización vieja, 
+                // queremos mantener el ID nuevo que trajimos de 'next-number'.
+
+            } catch (error) { Swal.fire('Error', 'Error cargando datos de la cotización base', 'error'); }
         }
       } catch (error) { console.error(error); } finally { setLoading(false); }
     };
     loadData();
-  }, [isEditMode, id]);
+  }, [isCloneMode, id]); // Dependencias del efecto
 
   const handleAddItem = () => {
     if (!currentProduct) return Swal.fire('Error', 'Seleccione un producto', 'error');
@@ -199,7 +202,6 @@ Registro: ${comp.NRC || ''}`;
   const handleSave = async () => {
     if (!selectedClient || items.length === 0) return Swal.fire('Faltan datos', 'Seleccione cliente y productos', 'warning');
     
-    // MODIFICADO: Se agrega 'terminos' al payload
     const payload = {
       clienteId: selectedClient.value, empresaId: parseInt(selectedCompanyId), nombreQuienCotiza: user.username,
       telefonoSnapshot: clientData?.Telefono, atencionASnapshot: clientData?.AtencionA, direccionSnapshot: clientData?.DireccionCalle,
@@ -208,12 +210,12 @@ Registro: ${comp.NRC || ''}`;
     };
 
     try {
-      if (isEditMode) {
-          await api.put(`/quotations/${id}`, payload);
-      } else {
-          await api.post('/quotations', payload);
-      }
-      Swal.fire('Éxito', isEditMode ? 'Cotización actualizada' : 'Cotización creada', 'success');
+      // --- CAMBIO PRINCIPAL AQUÍ ---
+      // Siempre usamos POST (Crear), ignorando si venimos de un ID existente.
+      // Esto crea una nueva cotización basada en los datos de la anterior.
+      await api.post('/quotations', payload);
+      
+      Swal.fire('Éxito', 'Nueva cotización guardada exitosamente', 'success');
       navigate('/cotizaciones');
     } catch (error) { Swal.fire('Error', 'No se pudo guardar', 'error'); }
   };
@@ -224,7 +226,16 @@ Registro: ${comp.NRC || ''}`;
     <div>
       <div className="d-flex align-items-center mb-4 no-print">
         <Button variant="link" onClick={() => navigate('/cotizaciones')} className="text-secondary p-0 me-3"><ArrowLeft size={24} /></Button>
-        <h2 className="text-inst-blue fw-bold mb-0">{isEditMode ? 'Editar Cotización' : 'Nueva Cotización'}</h2>
+       <div>
+        <h2 className="text-inst-blue fw-bold mb-0">
+            {isCloneMode ? 'Nueva Cotización' : 'Nueva Cotización'}
+        </h2>
+        {isCloneMode && (
+                <div className="text-muted fst-italic" style={{ fontSize: '1rem', marginTop: '2px' }}>
+                    Se creará una nueva cotización basada en la original.
+                </div>
+            )}
+            </div>
       </div>
       <Row>
         <Col lg={5} className="no-print">
@@ -254,7 +265,7 @@ Registro: ${comp.NRC || ''}`;
                 <Col md={12}><Form.Control as="textarea" rows={3} value={customDescription} onChange={(e) => setCustomDescription(e.target.value)}/></Col>
                 <Col md={6}><Form.Control type="number" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="Cant" /></Col>
                 <Col md={6}><Form.Control type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="$$" /></Col>
-                <Col md={12}><Button className="w-100" onClick={handleAddItem}>{editingIndex >= 0 ? "Actualizar" : "Agregar"}</Button></Col>
+                <Col md={12}><Button className="w-100" onClick={handleAddItem}>{editingIndex >= 0 ? "Actualizar Item" : "Agregar Item"}</Button></Col>
               </Row>
             </Card.Body>
           </Card>
@@ -291,9 +302,12 @@ Registro: ${comp.NRC || ''}`;
         </Col>
         <Col lg={7}>
           <Card className="shadow h-100">
-            <Card.Header className="d-flex justify-content-end gap-2 no-print">
+            <Card.Header className="d-flex justify-content-end gap-2 no-print align-items-center">
                 <Button variant="outline-secondary" size="sm" onClick={handlePrint}><Printer size={16}/> Imprimir</Button>
-                <Button className="btn-institutional" size="sm" onClick={handleSave}><Save size={16}/> Guardar</Button>
+                {/* Botón Guardar - Ahora siempre dice Guardar Nueva */}
+                <Button className="btn-institutional" size="sm" onClick={handleSave}>
+                    <Save size={16}/> {isCloneMode ? 'Guardar' : 'Guardar'}
+                </Button>
             </Card.Header>
             <Card.Body className="bg-light d-flex justify-content-center overflow-auto p-4">
               <div className="shadow bg-white" style={{ width: '210mm', minHeight: '297mm', transform: 'scale(0.75)', transformOrigin: 'top center' }}><QuotationPDF data={pdfData} /></div>

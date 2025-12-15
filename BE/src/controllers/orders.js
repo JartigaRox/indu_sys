@@ -23,11 +23,13 @@ const toDate = (val) => {
     return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
 };
 
-// 1. Obtener listado de Órdenes
+// 1. Obtener listado de Órdenes (Filtrado por Rol)
 export const getOrders = async (req, res) => {
     try {
         const pool = await getConnection();
-        const result = await pool.request().query(`
+        const request = pool.request();
+
+        let query = `
             SELECT 
                 o.OrdenID,
                 o.NumeroOrden,
@@ -61,8 +63,19 @@ export const getOrders = async (req, res) => {
             LEFT JOIN Usuarios v ON c.VendedorID = v.UsuarioID
             LEFT JOIN MetodosPago mp1 ON o.MetodoAnticipoID = mp1.MetodoID
             LEFT JOIN MetodosPago mp2 ON o.MetodoComplementoID = mp2.MetodoID
-            ORDER BY o.FechaCreacion DESC
-        `);
+        `;
+
+        // --- LÓGICA DE SEGURIDAD ---
+        // Si el usuario NO es admin (Rol 1), filtramos por quien CREÓ la orden (UsuarioID)
+        // Nota: Si prefieres que filtren por quien hizo la cotización, cambia o.UsuarioID por c.VendedorID
+        if (req.user.rolId !== 1) {
+            query += " WHERE o.UsuarioID = @userId";
+            request.input("userId", sql.Int, req.user.id);
+        }
+
+        query += " ORDER BY o.FechaCreacion DESC";
+
+        const result = await request.query(query);
         res.json(result.recordset);
     } catch (error) {
         console.error('Error en getOrders:', error);

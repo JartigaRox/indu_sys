@@ -34,9 +34,9 @@ CHEQUE A NOMBRE DE: JEREMÍAS DE JESÚS ARTIGA DE PAZ
 RAZÓN SOCIAL: JEREMÍAS DE JESÚS ARTIGA DE PAZ
 CONTACTO DE LA EMPRESA:
 DIRECCIÓN: CARRETERA A SONSONATE, KM. 24, EDIFICIO GP DON BOSCO, DISTRITO DE COLON, MUNICIPIO DE LA LIBERTAD OESTE
-TELÉFONO: ${data.TelefonoEmpresa || ''}
-NIT: ${data.NIT || ''}
-Registro: ${data.NRC || ''}`;
+TELÉFONO: {{TELEFONO}}
+NIT: {{NIT}}
+Registro: {{NRC}}`;
 
             // MODIFICADO: Usar los términos guardados si existen, sino usar default
             const termsContent = data.Terminos ? data.Terminos : defaultTerms;
@@ -75,7 +75,9 @@ Registro: ${data.NRC || ''}`;
                     Telefono: data.TelefonoEmpresa,
                     Celular: data.CelularEmpresa,
                     CorreoElectronico: data.EmailEmpresa,
-                    PaginaWeb: data.WebEmpresa
+                    PaginaWeb: data.WebEmpresa,
+                    NIT: data.NIT,
+                    NRC: data.NRC
                 },
                 terminos: termsContent // <--- Aquí pasamos el contenido correcto
             };

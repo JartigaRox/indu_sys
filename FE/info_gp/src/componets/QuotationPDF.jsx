@@ -4,7 +4,7 @@ import { FaMapMarkerAlt, FaPhoneAlt, FaWhatsapp, FaEnvelope, FaGlobe } from 'rea
 const QuotationPDF = forwardRef(({ data }, ref) => {
   if (!data || !data.empresa) return null;
 
-  const { cliente, items, user, numeroCotizacion, fecha, empresa, terminos } = data; // Agregado 'terminos' aquí
+  const { cliente, items, user, numeroCotizacion, fecha, empresa, terminos } = data; 
 
   // Calcular total
   const total = items.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
@@ -23,12 +23,27 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
     });
   };
 
-  // --- FUNCIÓN HELPER PARA RENDERIZAR LÍNEAS DE TÉRMINOS ---
-  // Convierte texto plano en items de lista y pone en negrita las claves (ej: "NOTA:")
-  const renderTermsList = (termsText) => {
-    if (!termsText) return null;
+  // --- 1. NUEVA FUNCIÓN PARA REEMPLAZAR ETIQUETAS ---
+  // Esta función busca las "tags" en el texto y pone los datos reales de la empresa actual
+  const processTermsText = (text, companyData) => {
+    if (!text) return "";
+    return text
+      .replace(/{{TELEFONO}}/g, companyData.Telefono || '')
+      .replace(/{{NIT}}/g, companyData.NIT || '')
+      .replace(/{{NRC}}/g, companyData.NRC || '')
+      .replace(/{{DIRECCION}}/g, companyData.Direccion || '')
+      .replace(/{{EMPRESA}}/g, companyData.Nombre || '');
+  };
+
+  // --- 2. FUNCIÓN HELPER MODIFICADA PARA RENDERIZAR TÉRMINOS ---
+  const renderTermsList = (rawTerms) => {
+    if (!rawTerms) return null;
     
-    return termsText.split('\n').map((line, idx) => {
+    // Primero procesamos el texto para cambiar {{TELEFONO}} por el número real
+    const processedTerms = processTermsText(rawTerms, empresa);
+
+    // Luego renderizamos línea por línea como antes
+    return processedTerms.split('\n').map((line, idx) => {
         if (!line.trim()) return null;
         
         // Detectar si la línea tiene una "clave" al principio (ej: "NOTA:", "GARANTÍA:")
@@ -212,7 +227,7 @@ const QuotationPDF = forwardRef(({ data }, ref) => {
                 <div className="mt-4">
                   <div className="d-flex justify-content-end mb-5">
                     <div className="p-3 text-white fw-bold rounded shadow-sm" style={{ background: mainColor, minWidth: '250px', display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                      <span>TOTAL DE LA COTIZACION:  </span>
+                      <span>TOTAL DE LA COTIZACION:  </span>
                       <span> <strong>${formatNumber(total)}</strong></span>
                     </div>
                   </div>

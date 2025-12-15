@@ -934,3 +934,5 @@ SELECT * FROM Cotizaciones
 
 ALTER TABLE Usuarios ADD ResetToken NVARCHAR(255) NULL;
 ALTER TABLE Usuarios ADD ResetTokenExpiry DATETIME NULL;
+
+SELECT * FROM Empresas;
